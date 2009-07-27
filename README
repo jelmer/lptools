@@ -1,0 +1,19 @@
+This is a temporary repository with some review tools for the Ubuntu One
+projects.
+
+review-notifier <project1> [[project2] ...]
+
+This tool will present notifications for changes to merge proposals on a
+project. You currently must pass the list of projects on the command line.
+
+
+review-list <project1> [[project2] ...]
+
+This tool will present a list of all the branches currently in the
+Needs Review state. It includes the current list of Ubuntu One projects to
+monitor, and additional projects can be passed in on the command line.
+
+
+Both tools use launchpadlib, and refresh automatically every 5 minutes
+as a hardcoded value. The former is not particularly useful with the new
+review-list script, but I've included it here for completeness.

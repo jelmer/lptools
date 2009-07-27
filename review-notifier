@@ -1,0 +1,147 @@
+#!/usr/bin/python
+
+from __future__ import with_statement
+
+import pygtk
+pygtk.require('2.0')
+import gobject
+import gtk
+
+import pynotify
+
+import os
+import sys
+
+from xdg.BaseDirectory import xdg_cache_home
+
+from launchpadlib.launchpad import Launchpad, EDGE_SERVICE_ROOT
+from launchpadlib.credentials import Credentials
+
+ICON_NAME = "bzr-icon-64"
+
+class Main(object):
+
+    def __init__(self):
+        self.id = 0
+        self.cached_candidates = {}
+
+        self.cachedir = os.path.join(xdg_cache_home, "review-notifier")
+        credsfile = os.path.join(self.cachedir, "credentials")
+
+        if not os.path.isdir(self.cachedir):
+            os.makedirs(self.cachedir)
+
+        if os.path.exists(credsfile):
+            creds = Credentials()
+            with file(credsfile) as f:
+                creds.load(f)
+            self.launchpad = Launchpad(creds, EDGE_SERVICE_ROOT)
+        else:
+            self.launchpad = Launchpad.get_token_and_login('review-notifier',
+                                                           EDGE_SERVICE_ROOT,
+                                                           self.cachedir)
+            with file(credsfile, "w") as f:
+                self.launchpad.credentials.save(f)
+
+        self.me = self.launchpad.me
+
+        print "Allo, %s" % self.me.name
+
+        self.projects = []
+
+        for arg in sys.argv:
+            if not arg.endswith("review-notifier"):
+                self.projects.append(arg)
+
+        pynotify.init("Review Notifier")
+        self.timeout()
+
+    def timeout(self):
+        for project in self.projects:
+            lp_project = None
+            lp_focus = None
+            try:
+                lp_project = self.launchpad.projects[project]
+                focus = lp_project.development_focus.branch
+            except AttributeError:
+                print "Project %s has no development focus." % project
+                continue
+            except KeyError:
+                print "Project %s not found." % project
+                continue
+
+            if not focus:
+                print "Project %s has no development focus." % project
+                continue
+
+            trunk = focus
+
+            if trunk.landing_candidates:
+                for c in trunk.landing_candidates:
+                    c_name = c.source_branch.unique_name
+                    status = None
+                    try:
+                        status = self.cached_candidates[c_name]
+                    except KeyError:
+                        status = None
+
+                    # If the proposal hasn't changed, get on with it
+                    if status and status == c.queue_status:
+                        continue
+
+                    self.cached_candidates[c_name] = c.queue_status
+
+                    n = pynotify.Notification("Review Notification")
+                    updated = False
+
+                    # Source and target branch URIs
+                    source = c.source_branch.display_name
+                    target = c.target_branch.display_name
+
+                    if c.queue_status == "Needs review":
+                        # First time we see the branch
+                        n.update("Branch Proposal",
+                                 "%s has proposed merging %s into %s." % (
+                                c.registrant.display_name, source, target),
+                                 ICON_NAME)
+                        updated = True
+                    elif c.queue_status == "Approved":
+                        # Branch was approved
+                        n.update("Branch Approval",
+                                 "%s was approved for merging into %s." % (
+                                source, target),
+                                 ICON_NAME)
+                        udpated = True
+                    elif c.queue_status == "Rejected":
+                        # Branch was rejected
+                        n.update("Branch Rejected",
+                                 """The proposal to merge %s into %s has been rejected.""" % (
+                                source, target),
+                                 ICON_NAME)
+                        updated = True
+                    elif c.queue_status == "Merged":
+                        # Code has landed in the target branch
+                        n.update("Branch Merged",
+                                 "%s has been merged into %s." % (source,
+                                                                  target),
+                                 ICON_NAME)
+                        updated = True
+                    else:
+                        print "%s status is %s." % (source, c.queue_status)
+
+                    if updated:
+                        n.set_urgency(pynotify.URGENCY_LOW)
+                        n.show()
+                    else:
+                        n.close()
+
+        return True
+
+    def run(self):
+        self.id = gobject.timeout_add_seconds(5 * 60, self.timeout)
+        gtk.main()
+
+
+if __name__ == "__main__":
+    foo = Main()
+    foo.run()

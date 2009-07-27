@@ -1,0 +1,177 @@
+#!/usr/bin/python
+
+from __future__ import with_statement
+
+import pygtk
+pygtk.require('2.0')
+import gobject
+import gtk
+import pango
+
+import os
+import re
+import subprocess
+import sys
+
+from xdg.BaseDirectory import xdg_cache_home
+
+from threading import Thread
+
+from launchpadlib.launchpad import Launchpad, EDGE_SERVICE_ROOT
+from launchpadlib.credentials import Credentials
+
+VOTES = { "Approve" : "#00ff00",
+          "Needs Fixing" : "#993300",
+          "Disapprove" : "#ff0000",
+          "Resubmit" : "#ff0000",
+          "Pending" : "#ff6600",
+          "Abstain" : "#909090",
+          "Needs Information" : "#909090",
+          }
+
+class Window(gtk.Window):
+
+      def __init__(self):
+            gtk.Window.__init__(self)
+            self.set_title("Pending Reviews")
+            self.set_default_size(320, 400)
+            self.connect("destroy", lambda w: gtk.main_quit())
+            self.connect("delete_event", lambda w: gtk.main_quit())
+
+            vbox = gtk.VBox()
+            self.add(vbox)
+            vbox.show()
+
+            toolbar = gtk.Toolbar()
+            vbox.pack_start(toolbar, expand=False, fill=False)
+            toolbar.show()
+
+            button = gtk.ToolButton(gtk.STOCK_PREFERENCES)
+            button.connect("clicked", self.__edit_prefs)
+            toolbar.insert(button, -1)
+            button.show()
+
+            self.store = gtk.ListStore(str, str)
+
+            view = gtk.TreeView(self.store)
+            view.connect("row-activated", self.__open_link)
+            vbox.add(view)
+            view.show()
+
+            cell = gtk.CellRendererText()
+            col = gtk.TreeViewColumn("Branch", cell, markup=0)
+            view.append_column(col)
+
+            self.cachedir = os.path.join(xdg_cache_home, "review-list")
+            credsfile = os.path.join(self.cachedir, "credentials")
+
+            if not os.path.isdir(self.cachedir):
+                  os.makedirs(self.cachedir)
+
+            if os.path.exists(credsfile):
+                  creds = Credentials()
+
+                  with file(credsfile) as f:
+                        creds.load(f)
+                  self.launchpad = Launchpad(creds, EDGE_SERVICE_ROOT)
+            else:
+                  self.launchpad = Launchpad.get_token_and_login(
+                        'review-list',
+                        EDGE_SERVICE_ROOT,
+                        self.cachedir)
+                  with file(credsfile, "w") as f:
+                        self.launchpad.credentials.save(f)
+
+            self.me = self.launchpad.me
+
+            print "Allo, %s" % self.me.name
+            self.show()
+
+            # Need to move this to a config file instead of hardcoding
+            self.projects = [ "ubunet",
+                              "ubuntuone-storage-protocol",
+                              "ubuntuone-client",
+                              "desktopcouch",
+                              "bindwood",
+                              "couchdb-glib",
+                              "evolution-couchdb",
+                              ]
+            for arg in sys.argv:
+                  if arg is not sys.argv[0]:
+                        self.projects.append(arg)
+
+            self.thread = None
+
+            self.__timeout()
+            self.id = gobject.timeout_add_seconds(5 * 60, self.__timeout)
+
+      def __edit_prefs(self, button, data=None):
+            print "Need a prefs dialog"
+
+      def __open_link(self, view, path, column, data=None):
+            row = self.store.get_iter(path)
+            url, = self.store.get(row, 1)
+            ret = subprocess.call(["xdg-open", url])
+            if ret != 0:
+                  sys.stderr.write("Failed to run 'xdg-open %s'\n" % url)
+
+      def __load_merges(self):
+            for project in self.projects:
+                  lp_project = None
+                  try:
+                        lp_project = self.launchpad.projects[project]
+                  except AttributeError:
+                        print "Project %s has no development focus." % project
+                        continue
+                  except KeyError:
+                        print "Project %s not found." % project
+                        continue
+
+                  for c in lp_project.getMergeProposals(status="Needs review"):
+                        votes = {}
+                        for key in VOTES.keys():
+                              votes[key] = 0
+
+                        for vote in c.votes:
+                              if not vote.comment:
+                                    continue
+                              else:
+                                    votes[vote.comment.vote] += 1
+
+                        for key in votes.keys():
+                              if votes[key] == 0:
+                                    votes.pop(key, None)
+
+                        vstr = ", ".join(
+                              ["<span color='%s'>%s</span>: %d" \
+                                     % (VOTES[key], key, votes[key]) \
+                                     for key in votes.keys()]
+                              )
+                        if vstr == "":
+                              vstr = "No Reviews"
+                        status = "%s\n%s" % (c.source_branch.display_name,
+                                             vstr)
+                        urlp = re.compile(
+                              'http[s]?://api\.(.*)launchpad\.net/beta/')
+                        merge_url = urlp.sub(
+                              'http://launchpad.net/', c.self_link)
+
+                        self.store.append((status, merge_url))
+#            self.thread.join()
+            
+      def __timeout(self):
+            self.store.clear()
+            self.__load_merges()
+#            if self.thread and self.thread.isAlive():
+#                  return True
+
+#            if self.thread is None:
+#                  thread = Thread(target=self.__load_merges)
+
+#            thread.start()
+            return True
+
+if __name__ == "__main__":
+      win = Window()
+      win.show()
+      gtk.main()
