@@ -91,6 +91,7 @@ class Window(gtk.Window):
             self.projects = [ "ubunet",
                               "ubuntuone-storage-protocol",
                               "ubuntuone-client",
+                              "ubuntuone-testing",
                               "desktopcouch",
                               "bindwood",
                               "couchdb-glib",
