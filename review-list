@@ -95,7 +95,7 @@ class Window(gtk.Window):
 
             if len(self.projects) == 0:
                 print "No projects specified"
-                system.exit(1)
+                sys.exit(1)
 
             self.thread = None
 
