@@ -85,7 +85,6 @@ class Window(gtk.Window):
 
             self.me = self.launchpad.me
 
-            print "Allo, %s" % self.me.name
             self.show()
 
             # Need to move this to a config file instead of hardcoding

@@ -46,8 +46,6 @@ class Main(object):
 
         self.me = self.launchpad.me
 
-        print "Allo, %s" % self.me.name
-
         self.projects = []
 
         for arg in sys.argv:
