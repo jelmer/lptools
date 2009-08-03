@@ -88,17 +88,14 @@ class Window(gtk.Window):
             self.show()
 
             # Need to move this to a config file instead of hardcoding
-            self.projects = [ "ubunet",
-                              "ubuntuone-storage-protocol",
-                              "ubuntuone-client",
-                              "desktopcouch",
-                              "bindwood",
-                              "couchdb-glib",
-                              "evolution-couchdb",
-                              ]
+            self.projects = [ ]
             for arg in sys.argv:
                   if arg is not sys.argv[0]:
                         self.projects.append(arg)
+
+			if len(self.projects) == 0:
+				print "No projects specified"
+				system.exit(1)
 
             self.thread = None
 
