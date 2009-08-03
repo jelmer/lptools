@@ -148,6 +148,7 @@ class Main(object):
 
                     if updated:
                         n.set_urgency(pynotify.URGENCY_LOW)
+                        n.set_hint("x-canonical-append", "allow")
                         n.show()
                     else:
                         n.close()
