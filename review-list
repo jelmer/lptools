@@ -93,9 +93,9 @@ class Window(gtk.Window):
                   if arg is not sys.argv[0]:
                         self.projects.append(arg)
 
-			if len(self.projects) == 0:
-				print "No projects specified"
-				system.exit(1)
+            if len(self.projects) == 0:
+                print "No projects specified"
+                system.exit(1)
 
             self.thread = None
 
