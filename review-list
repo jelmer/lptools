@@ -14,6 +14,7 @@ import subprocess
 import sys
 
 from xdg.BaseDirectory import xdg_cache_home
+from xdg.BaseDirectory import xdg_config_home
 
 from threading import Thread
 
@@ -92,6 +93,18 @@ class Window(gtk.Window):
             for arg in sys.argv:
                   if arg is not sys.argv[0]:
                         self.projects.append(arg)
+
+            projectlst = os.path.join(xdg_config_home, "review-tools", "project-list")
+            try:
+                f = open(projectlst)
+                prjlist = f.readlines()
+                for i in prjlist:
+                    self.projects.append(i.strip())
+                f.close
+            except IOError:
+                print "IO Error"
+            except:
+                pass
 
             if len(self.projects) == 0:
                 print "No projects specified"
