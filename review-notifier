@@ -53,9 +53,9 @@ class Main(object):
             if not arg.endswith("review-notifier"):
                 self.projects.append(arg)
 
-		if len(self.projects) == 0:
-			print "No Projects specified"
-			system.exit(1)
+        if len(self.projects) == 0:
+            print "No Projects specified"
+            sys.exit(1)
 
         pynotify.init("Review Notifier")
         self.timeout()
