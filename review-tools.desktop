@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Launchpad Reviews
+GenericName=Code Review Notifier
+Comment=Notify when new code reviews appear
+Exec=review-list
+StartupNotify=true
+Terminal=false
+Type=Application
+Categories=Network;
