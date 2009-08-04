@@ -31,8 +31,8 @@ class Main(object):
 
         self.indicators = { }
         server = indicate.indicate_server_ref_default()
-        server.set_type("message")
-        server.set_desktop_file("/usr/share/applications/pidgin.desktop")
+        server.set_type("message.instant")
+        server.set_desktop_file(os.path.join(os.getcwd(), "review-tools.desktop"))
         server.show()
 
         self.cachedir = os.path.join(xdg_cache_home, "review-notifier")
@@ -79,7 +79,7 @@ class Main(object):
 
         for project in self.projects:
             ind = indicate.IndicatorMessage()
-            ind.set_property("subtype", "instant")
+            ind.set_property("subtype", "im")
             ind.set_property("sender", project)
             ind.set_property_time("time", time())
             ind.hide()
