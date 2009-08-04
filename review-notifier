@@ -19,6 +19,7 @@ from launchpadlib.launchpad import Launchpad, EDGE_SERVICE_ROOT
 from launchpadlib.credentials import Credentials
 
 import indicate
+from time import time
 
 ICON_NAME = "bzr-icon-64"
 
@@ -32,6 +33,7 @@ class Main(object):
         server = indicate.indicate_server_ref_default()
         server.set_type("message")
         server.set_desktop_file("/usr/share/applications/pidgin.desktop")
+        server.show()
 
         self.cachedir = os.path.join(xdg_cache_home, "review-notifier")
         credsfile = os.path.join(self.cachedir, "credentials")
@@ -77,8 +79,9 @@ class Main(object):
 
         for project in self.projects:
             ind = indicate.IndicatorMessage()
-            ind.set_property("subtype", "im")
+            ind.set_property("subtype", "instant")
             ind.set_property("sender", project)
+            ind.set_property_time("time", time())
             ind.hide()
             self.indicators[project] = ind
 
@@ -163,6 +166,7 @@ class Main(object):
                         n.set_urgency(pynotify.URGENCY_LOW)
                         n.set_hint("x-canonical-append", "allow")
                         n.show()
+                        self.indicators[project].set_property_time("time", time())
                     else:
                         n.close()
             else:
