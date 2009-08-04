@@ -18,6 +18,8 @@ from xdg.BaseDirectory import xdg_config_home
 from launchpadlib.launchpad import Launchpad, EDGE_SERVICE_ROOT
 from launchpadlib.credentials import Credentials
 
+import indicate
+
 ICON_NAME = "bzr-icon-64"
 
 class Main(object):
@@ -25,6 +27,8 @@ class Main(object):
     def __init__(self):
         self.id = 0
         self.cached_candidates = {}
+
+        self.indicators = { }
 
         self.cachedir = os.path.join(xdg_cache_home, "review-notifier")
         credsfile = os.path.join(self.cachedir, "credentials")
@@ -67,6 +71,13 @@ class Main(object):
         if len(self.projects) == 0:
             print "No Projects specified"
             sys.exit(1)
+
+        for project in self.projects:
+            ind = indicate.IndicatorMessage()
+            ind.set_property("subtype", "im")
+            ind.set_property("sender", project)
+            ind.hide()
+            self.indicators[project] = ind
 
         pynotify.init("Review Notifier")
         self.timeout()
