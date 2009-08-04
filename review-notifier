@@ -29,6 +29,9 @@ class Main(object):
         self.cached_candidates = {}
 
         self.indicators = { }
+        server = indicate.indicate_server_ref_default()
+        server.set_type("message")
+        server.set_desktop_file("/usr/share/applications/pidgin.desktop")
 
         self.cachedir = os.path.join(xdg_cache_home, "review-notifier")
         credsfile = os.path.join(self.cachedir, "credentials")
@@ -103,6 +106,7 @@ class Main(object):
             trunk = focus
 
             if trunk.landing_candidates:
+                self.indicators[project].show()
                 for c in trunk.landing_candidates:
                     c_name = c.source_branch.unique_name
                     status = None
@@ -161,6 +165,8 @@ class Main(object):
                         n.show()
                     else:
                         n.close()
+            else:
+                self.indicators[project].hide()
 
         return True
 
