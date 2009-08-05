@@ -26,7 +26,7 @@ ICON_NAME = "bzr-icon-64"
 
 def indicator_display (indicator):
     name = indicator.get_property("sender")
-    url = "http://code.launchpad.net/" + name + "/"
+    url = "http://code.launchpad.net/" + name + "/+activereviews"
     ret = subprocess.call(["xdg-open", url])
     if ret != 0:
         sys.stderr.write("Failed to run 'xdg-open %s'\n" % url)
