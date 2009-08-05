@@ -80,6 +80,7 @@ class Main(object):
         self.me = self.launchpad.me
 
         self.projects = []
+        self.project_idle_ids = {}
 
         for arg in sys.argv:
             if not arg.endswith("review-notifier"):
@@ -115,89 +116,94 @@ class Main(object):
 
     def timeout(self):
         for project in self.projects:
-            lp_project = None
-            lp_focus = None
-            try:
-                lp_project = self.launchpad.projects[project]
-                focus = lp_project.development_focus.branch
-            except AttributeError:
-                print "Project %s has no development focus." % project
-                continue
-            except KeyError:
-                print "Project %s not found." % project
-                continue
-
-            if not focus:
-                print "Project %s has no development focus." % project
-                continue
-
-            trunk = focus
-
-            if trunk.landing_candidates:
-                self.indicators[project].show()
-                for c in trunk.landing_candidates:
-                    c_name = c.source_branch.unique_name
-                    status = None
-                    try:
-                        status = self.cached_candidates[c_name]
-                    except KeyError:
-                        status = None
-
-                    # If the proposal hasn't changed, get on with it
-                    if status and status == c.queue_status:
-                        continue
-
-                    self.cached_candidates[c_name] = c.queue_status
-
-                    n = pynotify.Notification("Review Notification")
-                    updated = False
-
-                    # Source and target branch URIs
-                    source = c.source_branch.display_name
-                    target = c.target_branch.display_name
-
-                    if c.queue_status == "Needs review":
-                        # First time we see the branch
-                        n.update("Branch Proposal",
-                                 "%s has proposed merging %s into %s." % (
-                                c.registrant.display_name, source, target),
-                                 ICON_NAME)
-                        updated = True
-                    elif c.queue_status == "Approved":
-                        # Branch was approved
-                        n.update("Branch Approval",
-                                 "%s was approved for merging into %s." % (
-                                source, target),
-                                 ICON_NAME)
-                        udpated = True
-                    elif c.queue_status == "Rejected":
-                        # Branch was rejected
-                        n.update("Branch Rejected",
-                                 """The proposal to merge %s into %s has been rejected.""" % (
-                                source, target),
-                                 ICON_NAME)
-                        updated = True
-                    elif c.queue_status == "Merged":
-                        # Code has landed in the target branch
-                        n.update("Branch Merged",
-                                 "%s has been merged into %s." % (source,
-                                                                  target),
-                                 ICON_NAME)
-                        updated = True
-                    else:
-                        print "%s status is %s." % (source, c.queue_status)
-
-                    if updated:
-                        n.set_urgency(pynotify.URGENCY_LOW)
-                        n.set_hint("x-canonical-append", "allow")
-                        n.show()
-                        self.indicators[project].set_property_time("time", time())
-                    else:
-                        n.close()
-            else:
-                self.indicators[project].hide()
+            self.project_idle_ids[project] = gobject.idle_add(self.project_idle, project)
 
         return True
+
+    def project_idle (self, project):
+        lp_project = None
+        lp_focus = None
+        try:
+            lp_project = self.launchpad.projects[project]
+            focus = lp_project.development_focus.branch
+        except AttributeError:
+            print "Project %s has no development focus." % project
+            return False
+        except KeyError:
+            print "Project %s not found." % project
+            return False
+
+        if not focus:
+            print "Project %s has no development focus." % project
+            return False
+
+        trunk = focus
+
+        if trunk.landing_candidates:
+            self.indicators[project].show()
+            for c in trunk.landing_candidates:
+                c_name = c.source_branch.unique_name
+                status = None
+                try:
+                    status = self.cached_candidates[c_name]
+                except KeyError:
+                    status = None
+
+                # If the proposal hasn't changed, get on with it
+                if status and status == c.queue_status:
+                    return False
+
+                self.cached_candidates[c_name] = c.queue_status
+
+                n = pynotify.Notification("Review Notification")
+                updated = False
+
+                # Source and target branch URIs
+                source = c.source_branch.display_name
+                target = c.target_branch.display_name
+
+                if c.queue_status == "Needs review":
+                    # First time we see the branch
+                    n.update("Branch Proposal",
+                             "%s has proposed merging %s into %s." % (
+                            c.registrant.display_name, source, target),
+                             ICON_NAME)
+                    updated = True
+                elif c.queue_status == "Approved":
+                    # Branch was approved
+                    n.update("Branch Approval",
+                             "%s was approved for merging into %s." % (
+                            source, target),
+                             ICON_NAME)
+                    udpated = True
+                elif c.queue_status == "Rejected":
+                    # Branch was rejected
+                    n.update("Branch Rejected",
+                             """The proposal to merge %s into %s has been rejected.""" % (
+                            source, target),
+                             ICON_NAME)
+                    updated = True
+                elif c.queue_status == "Merged":
+                    # Code has landed in the target branch
+                    n.update("Branch Merged",
+                             "%s has been merged into %s." % (source,
+                                                              target),
+                             ICON_NAME)
+                    updated = True
+                else:
+                    print "%s status is %s." % (source, c.queue_status)
+
+                if updated:
+                    n.set_urgency(pynotify.URGENCY_LOW)
+                    n.set_hint("x-canonical-append", "allow")
+                    n.show()
+                    self.indicators[project].set_property_time("time", time())
+                else:
+                    n.close()
+        else:
+            self.indicators[project].hide()
+
+        return False
 
     def run(self):
         self.id = gobject.timeout_add_seconds(5 * 60, self.timeout)
