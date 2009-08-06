@@ -62,6 +62,11 @@ class Window(gtk.Window):
             vbox.pack_start(toolbar, expand=False, fill=False)
             toolbar.show()
 
+            button = gtk.ToolButton(gtk.STOCK_REFRESH)
+            button.connect("clicked", self.__refresh)
+            toolbar.insert(button, -1);
+            button.show()
+
             button = gtk.ToolButton(gtk.STOCK_PREFERENCES)
             button.connect("clicked", self.__edit_prefs)
             toolbar.insert(button, -1)
@@ -79,10 +84,32 @@ class Window(gtk.Window):
             view.append_column(col)
 
             self.cachedir = os.path.join(xdg_cache_home, "review-list")
-            credsfile = os.path.join(self.cachedir, "credentials")
-
             if not os.path.isdir(self.cachedir):
                   os.makedirs(self.cachedir)
+
+            self.launchpad = None
+            self.me = None
+
+            # Need to move this to a config file instead of hardcoding
+            self.projects = [ "ubunet",
+                              "ubuntuone-storage-protocol",
+                              "ubuntuone-client",
+                              "ubuntuone-testing",
+                              "desktopcouch",
+                              "bindwood",
+                              "couchdb-glib",
+                              "evolution-couchdb",
+                              ]
+            for arg in sys.argv:
+                  if arg is not sys.argv[0]:
+                        self.projects.append(arg)
+
+            self.thread = None
+            self.id = 0
+            gobject.idle_add(self.__lp_login)
+
+      def __lp_login(self):
+            credsfile = os.path.join(self.cachedir, "credentials")
 
             if os.path.exists(credsfile):
                   creds = Credentials()
@@ -101,26 +128,16 @@ class Window(gtk.Window):
             self.me = self.launchpad.me
 
             print "Allo, %s" % self.me.name
-            self.show()
+            gobject.idle_add(self.__refresh, None)
+            return False
 
-            # Need to move this to a config file instead of hardcoding
-            self.projects = [ "ubunet",
-                              "ubuntuone-storage-protocol",
-                              "ubuntuone-client",
-                              "ubuntuone-testing",
-                              "desktopcouch",
-                              "bindwood",
-                              "couchdb-glib",
-                              "evolution-couchdb",
-                              ]
-            for arg in sys.argv:
-                  if arg is not sys.argv[0]:
-                        self.projects.append(arg)
-
-            self.thread = None
-
+      def __refresh(self, button, data=None):
+            if self.id != 0:
+                  gobject.source_remove(self.id)
+                  self.id = 0
             self.__timeout()
             self.id = gobject.timeout_add_seconds(5 * 60, self.__timeout)
+            return False
 
       def __edit_prefs(self, button, data=None):
             print "Need a prefs dialog"
@@ -130,7 +147,9 @@ class Window(gtk.Window):
             url, = self.store.get(row, 1)
             ret = subprocess.call(["xdg-open", url])
             if ret != 0:
-                  sys.stderr.write("Failed to run 'xdg-open %s'\n" % url)
+                  dialog = gtk.MessageDialog(self, 0, gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE, "Failed to run 'xdg-open %s'\n" % url)
+                  dialog.run()
+                  dialog.destroy()
 
       def __load_merges(self):
             for project in self.projects:
@@ -174,7 +193,6 @@ class Window(gtk.Window):
                               'http://launchpad.net/', c.self_link)
 
                         self.store.append((status, merge_url))
-#            self.thread.join()
             
       def __timeout(self):
             self.store.clear()
@@ -189,6 +207,10 @@ class Window(gtk.Window):
             return True
 
 if __name__ == "__main__":
-      win = Window()
-      win.show()
-      gtk.main()
+      try:
+            win = Window()
+            win.show()
+            gtk.main()
+      except KeyboardInterrupt:
+            gtk.main_quit()
+
