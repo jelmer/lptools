@@ -1,5 +1,4 @@
-This is a temporary repository with some review tools for the Ubuntu One
-projects.
+These are some tools for use with projects hosted on Launchpad.
 
 review-notifier <project1> [[project2] ...]
 
@@ -10,10 +9,9 @@ project. You currently must pass the list of projects on the command line.
 review-list <project1> [[project2] ...]
 
 This tool will present a list of all the branches currently in the
-Needs Review state. It includes the current list of Ubuntu One projects to
-monitor, and additional projects can be passed in on the command line. The
-list includes the branch name, and the votes on the proposal. You can
-double-click on a row to open the merge proposal page in your browser.
+Needs Review state. The list includes the branch name, and the votes
+on the proposal. You can double-click on a row to open the merge proposal
+page in your browser.
 
 
 Both tools use launchpadlib, and refresh automatically every 5 minutes
