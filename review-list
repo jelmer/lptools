@@ -111,7 +111,7 @@ class Window(gtk.Window):
 
             self.thread = None
             self.id = 0
-            gobject.idle_add(self.__lp_login)
+            Thread(target=self.__lp_login).start()
 
       def __lp_login(self):
             credsfile = os.path.join(self.cachedir, "credentials")
@@ -133,7 +133,9 @@ class Window(gtk.Window):
             self.me = self.launchpad.me
 
             print "Allo, %s" % self.me.name
-            gobject.idle_add(self.__refresh, None)
+            gtk.gdk.threads_enter()
+            self.__refresh(None)
+            gtk.gdk.threads_leave()
             return False
 
       def __refresh(self, button, data=None):
@@ -197,25 +199,30 @@ class Window(gtk.Window):
                         merge_url = urlp.sub(
                               'http://launchpad.net/', c.self_link)
 
+                        gtk.gdk.threads_enter()
                         self.store.append((status, merge_url))
+                        gtk.gdk.threads_leave()
             
       def __timeout(self):
             self.store.clear()
-            self.__load_merges()
-#            if self.thread and self.thread.isAlive():
-#                  return True
+            if self.thread and self.thread.isAlive():
+                  return True
 
-#            if self.thread is None:
-#                  thread = Thread(target=self.__load_merges)
+            if self.thread is None:
+                  thread = Thread(target=self.__load_merges)
 
-#            thread.start()
+            thread.start()
             return True
 
 if __name__ == "__main__":
+      gobject.threads_init()
+      gtk.gdk.threads_init()
       try:
             win = Window()
             win.show()
+            gtk.gdk.threads_enter()
             gtk.main()
+            gtk.gdk.threads_leave()
       except KeyboardInterrupt:
             gtk.main_quit()
 
