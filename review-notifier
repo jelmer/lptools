@@ -303,5 +303,12 @@ class Main(object):
 
 
 if __name__ == "__main__":
-    foo = Main()
-    foo.run()
+      gobject.threads_init()
+      gtk.gdk.threads_init()
+      try:
+            foo = Main()
+            gtk.gdk.threads_enter()
+            foo.run()
+            gtk.gdk.threads_leave()
+      except KeyboardInterrupt:
+            gtk.main_quit()
