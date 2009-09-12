@@ -155,7 +155,7 @@ class Preferences(object):
             self.dialog.run()
 
 def indicator_display (indicator):
-    name = indicator.get_property("sender")
+    name = indicator.get_property("name")
     url = "http://code.launchpad.net/" + name + "/+activereviews"
     ret = subprocess.call(["xdg-open", url])
     if ret != 0:
@@ -200,10 +200,9 @@ class Main(object):
             sys.exit(1)
 
         for project in self.config.projects:
-            ind = indicate.IndicatorMessage()
-            ind.set_property("subtype", "im")
-            ind.set_property("sender", project)
-            ind.set_property_time("time", time())
+            ind = indicate.Indicator()
+            ind.set_property("name", project)
+            ind.set_property("count", "%d" % 0)
             ind.connect("user-display", indicator_display)
             ind.hide()
             self.indicators[project] = ind
