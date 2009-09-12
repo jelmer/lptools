@@ -154,6 +154,11 @@ class Preferences(object):
                         self.store.append([project,])
             self.dialog.run()
 
+def server_display (server):
+    ret = subprocess.call(["./review-list"])
+    if ret != 0:
+        sys.stderr.write("Failed to run './review-list'\n")
+
 def indicator_display (indicator):
     name = indicator.get_property("name")
     url = "http://code.launchpad.net/" + name + "/+activereviews"
@@ -171,6 +176,7 @@ class Main(object):
         server = indicate.indicate_server_ref_default()
         server.set_type("message.instant")
         server.set_desktop_file(os.path.join(os.getcwd(), "review-tools.desktop"))
+        server.connect("server-display", server_display)
         server.show()
 
         self.cachedir = os.path.join(xdg_cache_home, "review-notifier")
