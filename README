@@ -1,5 +1,4 @@
-This is a temporary repository with some review tools for projects on
-Launchpad.
+These are some tools for use with projects hosted on Launchpad.
 
 review-notifier <project1> [[project2] ...]
 
@@ -11,8 +10,8 @@ review-list <project1> [[project2] ...]
 
 This tool will present a list of all the branches currently in the
 Needs Review state. The list includes the branch name, and the votes
-on the proposal. You can double-click on a row to open the merge
-proposal page in your browser.
+on the proposal. You can double-click on a row to open the merge proposal
+page in your browser.
 
 
 Both tools use launchpadlib, and refresh automatically every 5 minutes
