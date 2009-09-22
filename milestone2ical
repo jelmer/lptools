@@ -1,0 +1,109 @@
+#!/usr/bin/python
+#
+# Author: Rodney Dawes <rodney.dawes@canonical.com>
+#
+# Copyright 2009 Canonical Ltd.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License version 3, as published
+# by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranties of
+# MERCHANTABILITY, SATISFACTORY QUALITY, or FITNESS FOR A PARTICULAR
+# PURPOSE.  See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import with_statement
+
+import os
+import sys
+
+from xdg.BaseDirectory import xdg_cache_home
+
+from threading import Thread
+
+from launchpadlib.launchpad import Launchpad, EDGE_SERVICE_ROOT
+from launchpadlib.credentials import Credentials
+
+class MSMain(object):
+
+    def __init__(self, project):
+        self.project = project
+
+        self.cachedir = os.path.join(xdg_cache_home, "lptools")
+        if not os.path.isdir(self.cachedir):
+            os.makedirs(self.cachedir)
+
+        self.launchpad = None
+        self.thread = None
+        self.buffer = []
+
+    def __start_calendar(self):
+        self.buffer.append("BEGIN:VCALENDAR")
+        self.buffer.append("VERSION:2.0")
+        self.buffer.append("PRODID:-//Canonical/lptools/NONSGML v1.0//EN")
+
+    def __end_calendar(self):
+        self.buffer.append("END:VCALENDAR")
+
+    def __convert_to_ical(self, item):
+        for milestone in item.all_milestones:
+            if not milestone.date_targeted:
+                continue
+            self.buffer.append("BEGIN:VEVENT")
+            date = milestone.date_targeted.strftime("%Y%m%dT%H%M%SZ")
+            self.buffer.append("DTSTART:%s" % date)
+            self.buffer.append("SUMMARY:%s" % milestone.name)
+            self.buffer.append("END:VEVENT")
+
+    def __login_and_go(self):
+        credsfile = os.path.join(self.cachedir, "credentials")
+
+        if os.path.exists(credsfile):
+            creds = Credentials()
+
+            with file(credsfile) as f:
+                creds.load(f)
+                self.launchpad = Launchpad(creds, EDGE_SERVICE_ROOT)
+        else:
+            self.launchpad = Launchpad.get_token_and_login(
+                'lptools',
+                EDGE_SERVICE_ROOT,
+                self.cachedir)
+            with file(credsfile, "w") as f:
+                self.launchpad.credentials.save(f)
+
+        self.__start_calendar()
+        try:
+            lp_project = self.launchpad.project_groups[self.project]
+        except KeyError:
+            lp_project = self.launchpad.projects[self.project]
+        finally:
+            self.__convert_to_ical(lp_project)
+            self.__end_calendar()
+            print self.calendar()
+
+    def run(self):
+        self.thread = Thread(target=self.__login_and_go).start()
+
+    def stop(self):
+        self.thread.join()
+
+    def calendar(self):
+        return "\n".join(self.buffer)
+
+if __name__ == "__main__":
+    try:
+        project = sys.argv[1]
+    except IndexError:
+        print "Usage: %s <project>" % sys.argv[0]
+        exit(1)
+
+    try:
+        mt = MSMain(project=sys.argv[1])
+        mt.run()
+    except KeyboardInterrupt:
+        mt.stop()

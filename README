@@ -17,3 +17,10 @@ page in your browser.
 Both tools use launchpadlib, and refresh automatically every 5 minutes
 as a hardcoded value. The former is not particularly useful with the new
 review-list script, but I've included it here for completeness.
+
+
+
+milestone2ical <project>
+
+This tool will convert all the milestones on a project or project group,
+into an iCalendar 2.0 format file, for importing into a calendar program.
