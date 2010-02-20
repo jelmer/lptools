@@ -98,9 +98,9 @@ class cmd_delete(LaunchpadCommand):
         try:
             m.delete()
         except HTTPError, e:
-            if e.response == 404:
+            if e.response.status == 404:
                 pass
-            elif e.response == 500:
+            elif e.response.status == 500:
                 self.outf.write("Perhaps the milestone has been released?\n")
                 self.outf.write("If so you can undo this in the web UI.\n")
                 raise
