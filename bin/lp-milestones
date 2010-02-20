@@ -23,6 +23,7 @@ import sys
 
 # Might want to make errors import lazy.
 from bzrlib import commands, errors, ui, version_info as bzr_version_info
+from launchpadlib.errors import HTTPError
 
 from lptools import config
 
@@ -70,6 +71,27 @@ class cmd_create(LaunchpadCommand):
         #series = proj.getSeries(name=seriesname)
         series = self.launchpad.load(projectname + '/' + seriesname)
         milestone = series.newMilestone(name=milestonename)
+
+
+class cmd_delete(LaunchpadCommand):
+    """Delete a milestone.
+    
+    lp-milestone delete projectname/milestonename
+    """
+
+    takes_args = ['milestone']
+
+    def run(self, milestone):
+        components = milestone.split('/')
+        if len(components) != 2:
+            raise errors.BzrCommandError("milestone (%s) too short or too long."
+                % milestone)
+        m = self.launchpad.load('%s/+milestone/%s' % tuple(components))
+        try:
+            m.delete()
+        except HTTPError, e:
+            if e.response.status != 404:
+                raise
 
 
 class cmd_help(commands.Command):

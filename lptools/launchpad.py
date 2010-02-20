@@ -29,6 +29,8 @@ class Launchpad(UpstreamLaunchpad):
         """Load an object.
         
         Extended to support url_string being a relative url.
+
+        Needed until bug 524775 is fixed.
         """
         if not url_string.startswith('https:'):
             return UpstreamLaunchpad.load(self, str(self._root_uri) + url_string)
