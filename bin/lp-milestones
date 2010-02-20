@@ -17,6 +17,7 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import with_statement
+import time
 import optparse
 import os
 import sys
@@ -77,6 +78,13 @@ class cmd_delete(LaunchpadCommand):
     """Delete a milestone.
     
     lp-milestone delete projectname/milestonename
+
+    Note that this cannot delete a milestone with releases on it (yet). The
+    server will throw a 500 error, and you may see
+      File "/srv/////lib/lp/registry/model/milestone.py", line 209, in destroySelf
+          "You cannot delete a milestone which has a product release "
+          AssertionError: You cannot delete a milestone which has a product release associated with it.
+    In the trace if you have appropriate access.
     """
 
     takes_args = ['milestone']
@@ -90,7 +98,13 @@ class cmd_delete(LaunchpadCommand):
         try:
             m.delete()
         except HTTPError, e:
-            if e.response.status != 404:
+            if e.response == 404:
+                pass
+            elif e.response == 500:
+                self.outf.write("Perhaps the milestone has been released?\n")
+                self.outf.write("If so you can undo this in the web UI.\n")
+                raise
+            else:
                 raise
 
 
@@ -111,6 +125,26 @@ lp-milestones help commands -- list commands
         else:
             import bzrlib.help
             bzrlib.help.help(topic)
+
+
+class cmd_release(LaunchpadCommand):
+    """Create a release from a milestone.
+    
+    lp-milestone release projectname/milestonename
+    """
+
+    takes_args = ['milestone']
+
+    def run(self, milestone):
+        components = milestone.split('/')
+        if len(components) != 2:
+            raise errors.BzrCommandError("milestone (%s) too short or too long."
+                % milestone)
+        m = self.launchpad.load('%s/+milestone/%s' % tuple(components))
+        now = time.strftime('%Y-%m-%d-%X', time.gmtime())
+        # note: there is a bug with how the releases are created, don't be surprised
+        # if they are created 'X hours ago' where 'X' is the hour in UTC.
+        m.createProductRelease(date_released=now)
 
 
 class cmd_rename(LaunchpadCommand):
