@@ -113,6 +113,27 @@ lp-milestones help commands -- list commands
             bzrlib.help.help(topic)
 
 
+class cmd_rename(LaunchpadCommand):
+    """Rename a milestone.
+    
+    lp-milestone rename projectname/milestonename newname
+    """
+
+    takes_args = ['milestone', 'newname']
+
+    def run(self, milestone, newname):
+        components = milestone.split('/')
+        if len(components) != 2:
+            raise errors.BzrCommandError("milestone (%s) too short or too long."
+                % milestone)
+        if '/' in newname:
+            raise errors.BzrCommandError(
+                "milestones can only be renamed within a project.")
+        m = self.launchpad.load('%s/+milestone/%s' % tuple(components))
+        m.name = newname
+        m.lp_save()
+
+
 def do_run_bzr(argv):
     if bzr_version_info > (2, 2, 0):
         # in bzr 2.2 we can disable bzr plugins so bzr commands don't show
