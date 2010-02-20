@@ -37,11 +37,7 @@ class Main(object):
     def __init__(self):
         self.id = 0
         self.cached_candidates = {}
-        
-        self.cachedir = os.path.join(xdg_cache_home, "review-notifier")
-        config.ensure_dir(self.cachedir)
-        self.launchpad = config.get_launchpad(self.cachedir)
-
+        self.launchpad = config.get_launchpad("review-notifier")
         self.me = self.launchpad.me
 
         print "Allo, %s" % self.me.name

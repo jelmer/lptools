@@ -38,11 +38,16 @@ def ensure_dir(dir):
         os.makedirs(dir)
 
 
-def get_launchpad(cachedir):
+def get_launchpad(appname):
     """Get a login to launchpad for lptools caching in cachedir.
     
-    Note that caching is not multiple-process safe in launchpadlib.
+    Note that caching is not multiple-process safe in launchpadlib, and the
+    appname parameter is used to create per-app cachedirs.
+
+    :param appname: The name of the app used to create per-app cachedirs.
     """
+    cachedir = os.path.join(xdg_cache_home, appname)
+    ensure_dir(cachedir)
     credspath = lptools_credentials_path()
     if os.path.exists(credspath):
         creds = Credentials()

@@ -200,9 +200,6 @@ class Window(gtk.Window):
             col = gtk.TreeViewColumn("Branch", cell, markup=0)
             view.append_column(col)
 
-            self.cachedir = os.path.join(config.xdg_cache_home, "review-list")
-            config.ensure_dir(self.cachedir)
-
             self.launchpad = None
             self.me = None
 
@@ -216,7 +213,7 @@ class Window(gtk.Window):
             Thread(target=self.__lp_login).start()
 
       def __lp_login(self):
-            self.launchpad = config.get_launchpad(self.cachedir)
+            self.launchpad = config.get_launchpad("review-list")
 
             self.me = self.launchpad.me
 
