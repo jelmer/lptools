@@ -16,6 +16,7 @@ setup(
     description='A collection of tools for developers who use launchpad',
     long_description=description,
     py_modules=[],
+    packages=['lptools'],
     scripts=glob('bin/*'),
     classifiers = [
         'Development Status :: 4 - Beta',
