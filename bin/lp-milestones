@@ -68,7 +68,7 @@ class cmd_create(LaunchpadCommand):
         # Direct access takes 50% of the time of doing traversal.
         #proj = self.launchpad.projects[projectname]
         #series = proj.getSeries(name=seriesname)
-        series = self.launchpad.load(str(self.launchpad._root_uri) + projectname + '/' + seriesname)
+        series = self.launchpad.load(projectname + '/' + seriesname)
         milestone = series.newMilestone(name=milestonename)
 
 

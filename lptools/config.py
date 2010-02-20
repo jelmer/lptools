@@ -28,8 +28,10 @@ __all__ = [
 import os.path
 
 from launchpadlib.credentials import Credentials
-from launchpadlib.launchpad import Launchpad, EDGE_SERVICE_ROOT
+from launchpadlib.launchpad import EDGE_SERVICE_ROOT
 from xdg.BaseDirectory import xdg_cache_home
+
+from lptools import launchpad
 
 
 def ensure_dir(dir):
@@ -53,9 +55,9 @@ def get_launchpad(appname):
         creds = Credentials()
         with file(credspath) as f:
             creds.load(f)
-        return Launchpad(creds, EDGE_SERVICE_ROOT, cachedir)
+        return launchpad.Launchpad(creds, EDGE_SERVICE_ROOT, cachedir)
     else:
-        result = Launchpad.get_token_and_login('lptools',
+        result = launchpad.Launchpad.get_token_and_login('lptools',
             EDGE_SERVICE_ROOT, cachedir)
         with file(credspath, "w") as f:
             result.credentials.save(f)
