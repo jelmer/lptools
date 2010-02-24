@@ -17,21 +17,18 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import with_statement
-
-import pygtk
-pygtk.require('2.0')
-import gobject
-import gtk
-
-import pynotify
-
 import os
 import sys
 
+import gobject
+import gtk
+import pygtk
+import pynotify
 from xdg.BaseDirectory import xdg_cache_home
 
-from launchpadlib.launchpad import Launchpad, EDGE_SERVICE_ROOT
-from launchpadlib.credentials import Credentials
+from lptools import config
+
+pygtk.require('2.0')
 
 ICON_NAME = "bzr-icon-64"
 
@@ -40,31 +37,14 @@ class Main(object):
     def __init__(self):
         self.id = 0
         self.cached_candidates = {}
-
-        self.cachedir = os.path.join(xdg_cache_home, "review-notifier")
-        credsfile = os.path.join(self.cachedir, "credentials")
-
-        if not os.path.isdir(self.cachedir):
-            os.makedirs(self.cachedir)
-
-        if os.path.exists(credsfile):
-            creds = Credentials()
-            with file(credsfile) as f:
-                creds.load(f)
-            self.launchpad = Launchpad(creds, EDGE_SERVICE_ROOT)
-        else:
-            self.launchpad = Launchpad.get_token_and_login('review-notifier',
-                                                           EDGE_SERVICE_ROOT,
-                                                           self.cachedir)
-            with file(credsfile, "w") as f:
-                self.launchpad.credentials.save(f)
-
+        self.launchpad = config.get_launchpad("review-notifier")
         self.me = self.launchpad.me
 
         print "Allo, %s" % self.me.name
 
         self.projects = []
 
+        # TODO: get the config from lptools.conf
         for arg in sys.argv:
             if not arg.endswith("review-notifier"):
                 self.projects.append(arg)

@@ -17,25 +17,21 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import with_statement
+from ConfigParser import ConfigParser
+import os
+import re
+import subprocess
+import sys
+from threading import Thread
 
 import pygtk
 pygtk.require('2.0')
 import gobject
 import gtk
 import pango
-
-from ConfigParser import ConfigParser
-import os
-import re
-import subprocess
-import sys
-
 from xdg.BaseDirectory import xdg_cache_home, xdg_config_home
 
-from threading import Thread
-
-from launchpadlib.launchpad import Launchpad, EDGE_SERVICE_ROOT
-from launchpadlib.credentials import Credentials
+from lptools import config
 
 VOTES = { "Approve" : "#00ff00",
           "Needs Fixing" : "#993300",
@@ -65,6 +61,7 @@ class Preferences(object):
             else:
                   self.projects = []
 
+            # XXX: Not currently honoured - not sure if it ever worked.
             if self.config.has_option("lptools", "server"):
                   self.api_server = self.config.get("lptools", "server")
             else:
@@ -167,7 +164,7 @@ class Window(gtk.Window):
             self.set_title("Pending Reviews")
             self.set_default_size(320, 400)
             self.connect("destroy", lambda w: gtk.main_quit())
-            self.connect("delete_event", lambda w: gtk.main_quit())
+            self.connect("delete_event", lambda w,x: gtk.main_quit())
 
             vbox = gtk.VBox()
             self.add(vbox)
@@ -203,10 +200,6 @@ class Window(gtk.Window):
             col = gtk.TreeViewColumn("Branch", cell, markup=0)
             view.append_column(col)
 
-            self.cachedir = os.path.join(xdg_cache_home, "review-list")
-            if not os.path.isdir(self.cachedir):
-                  os.makedirs(self.cachedir)
-
             self.launchpad = None
             self.me = None
 
@@ -220,21 +213,7 @@ class Window(gtk.Window):
             Thread(target=self.__lp_login).start()
 
       def __lp_login(self):
-            credsfile = os.path.join(self.cachedir, "credentials")
-
-            if os.path.exists(credsfile):
-                  creds = Credentials()
-
-                  with file(credsfile) as f:
-                        creds.load(f)
-                  self.launchpad = Launchpad(creds, EDGE_SERVICE_ROOT)
-            else:
-                  self.launchpad = Launchpad.get_token_and_login(
-                        'review-list',
-                        EDGE_SERVICE_ROOT,
-                        self.cachedir)
-                  with file(credsfile, "w") as f:
-                        self.launchpad.credentials.save(f)
+            self.launchpad = config.get_launchpad("review-list")
 
             self.me = self.launchpad.me
 
