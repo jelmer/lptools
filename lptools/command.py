@@ -49,10 +49,10 @@ def get_command(cmd_or_None, cmd_name):
         return cmd_help()
     elif cmd_name == 'help':
         return cmd_help()
-    try:
-        return sys.modules['__main__']['cmd_' + cmd_name]()
-    except KeyError:
-        return cmd_or_None
+    klass = getattr(sys.modules['__main__'], 'cmd_' + cmd_name, None)
+    if klass is not None:
+        return klass()
+    return cmd_or_None
 
 
 class LaunchpadCommand(commands.Command):
@@ -60,8 +60,8 @@ class LaunchpadCommand(commands.Command):
 
     def run_argv_aliases(self, argv, alias_argv=None):
         # This might not be unique-enough for a cachedir; can do
-        # lp-milestones/cmdname if needed.
-        self.launchpad = config.get_launchpad('lp-milestones')
+        # $frontend/cmdname if needed.
+        self.launchpad = config.get_launchpad(os.path.basename(sys.argv[0]))
         return commands.Command.run_argv_aliases(self, argv, alias_argv)
 
 
