@@ -1,0 +1,119 @@
+#!/usr/bin/python
+#
+# Author: Robert Collins <robert.collins@canonical.com>
+#
+# Copyright 2010 Canonical Ltd.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License version 3, as published
+# by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranties of
+# MERCHANTABILITY, SATISFACTORY QUALITY, or FITNESS FOR A PARTICULAR
+# PURPOSE.  See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+"""lp-project -- An lptools command to work with projects in Launchpad.
+https://launchpad.net/lptools/
+
+lp-project help commands -- list commands
+"""
+
+import time
+import os
+import sys
+
+# Might want to make errors import lazy.
+from bzrlib import bzrdir, directory_service, errors, transport
+from launchpadlib.errors import HTTPError
+
+from lptools.command import *
+
+class cmd_create(LaunchpadCommand):
+    """Create a project.
+
+    This creates two teams - a management/committer team owner by you and
+    a -dev mailing list owned by the mgmt team. It then creates the project,
+    makes it owned by the committer team, creates a new empty bzr branch for
+    trunk and then fires up a web browser pointing at the project for you to
+    fine tune.
+
+    After running this command you need to:
+     - set what LP features you are using
+       (https://bugs.edge.launchpad.net/launchpad/+bug/537269)
+     - describe your project (title, summary, description)
+     - upload your code to lp:PROJECT
+     - turn on the mailing list by hand
+       (https://bugs.edge.launchpad.net/launchpad/+bug/537258)
+    
+    lp-project create projectname
+    """
+
+    takes_args = ['project']
+
+    def run(self, project):
+        self.outf.write('creating project %s\n' % project)
+        #load the lp plugin - we needs it, but don't want its commands shown.
+        from bzrlib.plugins import launchpad
+        project_d = {'project':project}
+        mgmt = self.launchpad.people.newTeam(
+            display_name='%s committers' % project, name=project,
+            subscription_policy='Moderated Team', team_description="This is the"
+            " %(project)s project maintainers and committers team. Membership "
+            "in this team grants commit access to the %(project)s trunk and "
+            "release branches, and owner access to the project. To become a "
+            "member of this team, please contact the project via the "
+            "%(project)s-dev mailing list." % {'project':project})
+        dev = self.launchpad.people.newTeam(
+            display_name='%s mailing list' % project, name='%s-dev' % project,
+            subscription_policy='Open Team', team_description="This is the"
+            " %(project)s (https://launchpad.net/%(project)s) development "
+            "discussion mailing list. To subscribe to the list join this team "
+            "(it does not receive bug mail or other such dross)." % project_d)
+	dev.team_owner = mgmt
+	dev.lp_save()
+        proj = self.launchpad.projects.new_project(
+            display_name=project,
+            name=project,
+            registrant=mgmt,
+            title="Put what you want to show in browser window titles for %s "
+                "here" % project,
+            description="""Put a long description of the %(project)s project here.
+
+A mailing list for discussion, usage and development is at https://launchpad.net/~%(project)s-dev - all are welcome to join. Some folk hang out on #%(project)s on irc.freenode.net.
+""" % project_d,
+            home_page_url="https://launchpad.net/%s" % project,
+            summary="Put a pithy summary of %s here." % project,
+            )
+        proj.bug_reporting_guidelines = """Enough data to reproduce the behaviour if possible.
+
+If that is not possible, just describe as well as you can what is happening and we will talk through the issue with you.
+"""
+        proj.owner = mgmt
+        proj.lp_save()
+        branch_path = '~%(project)s/%(project)s/trunk' % project_d
+        lp_host = os.environ.get('LAUNCHPAD_API', '')
+        if lp_host:
+            lp_host = '//%s/' % lp_host
+        branch = bzrdir.BzrDir.create_branch_convenience(
+            'lp:%s%s' % (lp_host, branch_path), force_new_tree=False)
+        series = proj.getSeries(name='trunk')
+        series.branch_link = self.launchpad.load(branch_path)
+        series.lp_save()
+        self.outf.write("""
+Project created at %s (sorry about the url. (https://bugs.edge.launchpad.net/launchpadlib/+bug/316694)).
+You now need to:
+ - set what LP features you are using
+   (https://bugs.edge.launchpad.net/launchpad/+bug/537269)
+ - describe your project (title, summary, description)
+ - upload your code to lp:PROJECT
+ - turn on the mailing list by hand
+   (https://bugs.edge.launchpad.net/launchpad/+bug/537258)
+""" % proj.self_link)
+
+
+if __name__ == "__main__":
+    main()
