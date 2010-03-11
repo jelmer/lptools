@@ -18,6 +18,7 @@
 
 from __future__ import with_statement
 from ConfigParser import ConfigParser
+from launchpadlib.launchpad import EDGE_SERVICE_ROOT
 import os
 import re
 import subprocess
