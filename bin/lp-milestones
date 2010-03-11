@@ -22,17 +22,12 @@ https://launchpad.net/lptools/
 lp-milestones help commands -- list commands
 """
 
-from __future__ import with_statement
 import time
-import optparse
-import os
-import sys
 
 # Might want to make errors import lazy.
 from bzrlib import errors
 from launchpadlib.errors import HTTPError
 
-from lptools import config
 from lptools.command import *
 
 class cmd_create(LaunchpadCommand):
