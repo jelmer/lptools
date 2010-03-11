@@ -35,8 +35,12 @@ __all__ = [
     'main',
     ]
 
-from bzrlib import commands, ui, version_info as bzr_version_info
+import os
 import sys
+
+from bzrlib import commands, ui, version_info as bzr_version_info
+
+from lptools import config
 
 def list_commands(command_names):
     mod = sys.modules['__main__']
