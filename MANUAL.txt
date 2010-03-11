@@ -1,0 +1,12 @@
+=======
+LPTools
+=======
+
+Environment Variables
+---------------------
+
+When running lptools, the variable LAUNCHPAD_API can be set to cause a specific
+Launchpad service to be connected to. Current values are:
+
+* edge
+* staging

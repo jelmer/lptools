@@ -55,10 +55,10 @@ def get_launchpad(appname):
         creds = Credentials()
         with file(credspath) as f:
             creds.load(f)
-        return launchpad.Launchpad(creds, EDGE_SERVICE_ROOT, cachedir)
+        return launchpad.Launchpad(creds, _service_root(), cachedir)
     else:
         result = launchpad.Launchpad.get_token_and_login('lptools',
-            EDGE_SERVICE_ROOT, cachedir)
+            _service_root(), cachedir)
         with file(credspath, "w") as f:
             result.credentials.save(f)
         return result
@@ -81,3 +81,12 @@ def lptools_credentials_path():
     cachedir = lptools_cachedir()
     ensure_dir(cachedir)
     return os.path.join(lptools_cachedir(), 'credentials')
+
+
+def _service_root():
+    """Get the service root to connect to.
+
+    By default this is EDGE_SERVICE_ROOT. If LAUNCHPAD_API is set in the
+    environment, that value is used instead.
+    """
+    return os.environ.get('LAUNCHPAD_API', EDGE_SERVICE_ROOT)
