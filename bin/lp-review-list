@@ -18,18 +18,17 @@
 
 from __future__ import with_statement
 from ConfigParser import ConfigParser
+from launchpadlib.launchpad import EDGE_SERVICE_ROOT
 import os
 import re
 import subprocess
-import sys
 from threading import Thread
 
 import pygtk
 pygtk.require('2.0')
 import gobject
 import gtk
-import pango
-from xdg.BaseDirectory import xdg_cache_home, xdg_config_home
+from xdg.BaseDirectory import xdg_config_home
 
 from lptools import config
 
