@@ -281,7 +281,7 @@ class Window(gtk.Window):
                         status = "%s\n%s" % (c.source_branch.display_name,
                                              vstr)
                         urlp = re.compile(
-                              'http[s]?://api\.(.*)launchpad\.net/beta/')
+                              'http[s]?://api\.(.*)launchpad\.net/[^/]+/')
                         merge_url = urlp.sub(
                               'http://launchpad.net/', c.self_link)
 
