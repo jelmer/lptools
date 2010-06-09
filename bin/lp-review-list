@@ -41,121 +41,6 @@ VOTES = { "Approve" : "#00ff00",
           "Needs Information" : "#909090",
           }
 
-class Preferences(object):
-
-      def __init__(self):
-            self.filename = os.path.join(xdg_config_home, "lptools",
-                                         "lptools.conf")
-            self.config = ConfigParser()
-            self.config.read(self.filename)
-            if not os.path.isdir(os.path.dirname(self.filename)):
-                  os.makedirs(os.path.dirname(self.filename))
-
-            if not self.config.has_section("lptools"):
-                  self.config.add_section("lptools")
-
-            if self.config.has_option("lptools", "projects"):
-                  self.projects = self.config.get("lptools",
-                                                  "projects").split(",")
-            else:
-                  self.projects = []
-
-            # XXX: Not currently honoured - not sure if it ever worked.
-            if self.config.has_option("lptools", "server"):
-                  self.api_server = self.config.get("lptools", "server")
-            else:
-                  self.api_server = EDGE_SERVICE_ROOT
-
-            # gtk.ListStore for the dialog
-            self.store = None
-            self.dialog = self.__build_dialog()
-
-      def __build_dialog(self):
-            dialog = gtk.Dialog()
-            dialog.set_title("Pending Reviews Preferences")
-            dialog.set_destroy_with_parent(True)
-            dialog.set_has_separator(False)
-            dialog.set_default_size(240, 320)
-
-            area = dialog.get_content_area()
-
-            vbox = gtk.VBox(spacing=6)
-            vbox.set_border_width(12)
-            area.add(vbox)
-            vbox.show()
-
-            label = gtk.Label("<b>%s</b>" % "_Projects")
-            label.set_use_underline(True)
-            label.set_use_markup(True)
-            label.set_alignment(0.0, 0.5)
-            vbox.pack_start(label, expand=False, fill=False)
-            label.show()
-
-            hbox = gtk.HBox(spacing=12)
-            vbox.pack_start(hbox, expand=True, fill=True)
-            hbox.show()
-
-            misc = gtk.Label()
-            hbox.pack_start(misc, expand=False, fill=False)
-            misc.show()
-
-            scrollwin = gtk.ScrolledWindow()
-            scrollwin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
-            hbox.pack_start(scrollwin, expand=True, fill=True)
-            scrollwin.show()
-
-            self.store = gtk.ListStore(str)
-
-            view = gtk.TreeView(self.store)
-            label.set_mnemonic_widget(view)
-            view.set_headers_visible(False)
-            scrollwin.add(view)
-            view.show()
-
-            cell = gtk.CellRendererText()
-            cell.set_property("editable", True)
-            cell.connect("editing_started", self.__edit_started)
-            cell.connect("edited", self.__edit_finished)
-            col = gtk.TreeViewColumn("Project", cell, markup=0)
-            view.append_column(col)
-
-            dialog.connect("close", self.__dialog_closed, 0)
-            dialog.connect("response", self.__dialog_closed)
-
-            return dialog
-
-      def __edit_started(self, cell, editable, path):
-            return
-
-      def __edit_finished(self, sell, path, text):
-            if text == "Click here to add a project...":
-                  return
-            treeiter = self.store.get_iter_from_string(path)
-            label = "<i>%s</i>" % "Click here to add a project..."
-            self.store.set(treeiter, 0, label)
-            self.projects.append(text)
-            self.store.append([text,])
-
-      def __dialog_closed(self, dialog, response):
-            dialog.hide()
-            if len(self.projects) > 0:
-                  self.config.set("lptools", "projects",
-                                  ",".join(self.projects))
-                  with open(self.filename, "w+b") as f:
-                        self.config.write(f)
-
-      def show_dialog(self, parent):
-            if not self.dialog.get_transient_for():
-                  self.dialog.set_transient_for(parent)
-            self.store.clear()
-            text = "<i>%s</i>" % "Click here to add a project..."
-            self.store.append([text,])
-            if len(self.projects) != 0:
-                  for project in self.projects:
-                        self.store.append([project,])
-            self.dialog.run()
-
-
 class Window(gtk.Window):
 
       def __init__(self):
@@ -178,11 +63,6 @@ class Window(gtk.Window):
             toolbar.insert(button, -1);
             button.show()
 
-            button = gtk.ToolButton(gtk.STOCK_PREFERENCES)
-            button.connect("clicked", self.__edit_prefs)
-            toolbar.insert(button, -1)
-            button.show()
-
             scrollwin = gtk.ScrolledWindow()
             scrollwin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
             vbox.pack_start(scrollwin, expand=True, fill=True)
@@ -201,11 +81,6 @@ class Window(gtk.Window):
 
             self.launchpad = None
             self.me = None
-
-            self.config = Preferences()
-            if len(self.config.projects) == 0:
-                  text = "<i>%s</i>" % "No projects specified"
-                  self.store.append((text, ""))
 
             self.thread = None
             self.id = 0
@@ -230,9 +105,6 @@ class Window(gtk.Window):
             self.id = gobject.timeout_add_seconds(5 * 60, self.__timeout)
             return False
 
-      def __edit_prefs(self, button, data=None):
-            self.config.show_dialog(self)
-
       def __open_link(self, view, path, column, data=None):
             row = self.store.get_iter(path)
             url, = self.store.get(row, 1)
@@ -245,49 +117,48 @@ class Window(gtk.Window):
                   dialog.destroy()
 
       def __load_merges(self):
-            for project in self.config.projects:
-                  lp_project = None
-                  try:
-                        lp_project = self.launchpad.projects[project]
-                  except AttributeError:
-                        print "Project %s has no development focus." % project
-                        continue
-                  except KeyError:
-                        print "Project %s not found." % project
-                        continue
+            merges = []
+            mine = self.me.getRequestedReviews(status=[u'Needs review'])
+            for merge in mine:
+                  merges.append(merge)
 
-                  for c in lp_project.getMergeProposals(status="Needs review"):
-                        votes = {}
-                        for key in VOTES.keys():
-                              votes[key] = 0
+            for team in self.me.super_teams:
+                  for merge in team.getRequestedReviews(status=[u'Needs review']):
+                        if merge not in merges:
+                              merges.append(merge)
 
-                        for vote in c.votes:
-                              if not vote.comment:
-                                    continue
-                              else:
-                                    votes[vote.comment.vote] += 1
+            for merge in merges:
+                  votes = {}
+                  for key in VOTES.keys():
+                        votes[key] = 0
 
-                        for key in votes.keys():
-                              if votes[key] == 0:
-                                    votes.pop(key, None)
+                  for vote in merge.votes:
+                        if not vote.comment:
+                              continue
+                        else:
+                              votes[vote.comment.vote] += 1
 
-                        vstr = ", ".join(
-                              ["<span color='%s'>%s</span>: %d" \
-                                     % (VOTES[key], key, votes[key]) \
-                                     for key in votes.keys()]
-                              )
-                        if vstr == "":
-                              vstr = "No Reviews"
-                        status = "%s\n%s" % (c.source_branch.display_name,
-                                             vstr)
-                        urlp = re.compile(
-                              'http[s]?://api\.(.*)launchpad\.net/[^/]+/')
-                        merge_url = urlp.sub(
-                              'http://launchpad.net/', c.self_link)
+                  for key in votes.keys():
+                        if votes[key] == 0:
+                              votes.pop(key, None)
 
-                        gtk.gdk.threads_enter()
-                        self.store.append((status, merge_url))
-                        gtk.gdk.threads_leave()
+                  vstr = ", ".join(
+                        ["<span color='%s'>%s</span>: %d" \
+                               % (VOTES[key], key, votes[key]) \
+                               for key in votes.keys()]
+                        )
+                  if vstr == "":
+                        vstr = "No Reviews"
+                  status = "%s\n%s" % (merge.source_branch.display_name,
+                                       vstr)
+                  urlp = re.compile(
+                        'http[s]?://api\.(.*)launchpad\.net/[^/]+/')
+                  merge_url = urlp.sub(
+                        'http://launchpad.net/', merge.self_link)
+
+                  gtk.gdk.threads_enter()
+                  self.store.append((status, merge_url))
+                  gtk.gdk.threads_leave()
             
       def __timeout(self):
             self.store.clear()
