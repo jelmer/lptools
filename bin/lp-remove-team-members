@@ -1,0 +1,49 @@
+#!/usr/bin/python
+#
+# Copyright 2011 Canonical Ltd.
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License version 3, as published
+# by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranties of
+# MERCHANTABILITY, SATISFACTORY QUALITY, or FITNESS FOR A PARTICULAR
+# PURPOSE.  See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Remove members from a Launchpad team.
+
+Usage: lp-remove-team-members TEAM MEMBER...
+"""
+
+import socket
+import sys
+
+from lptools.config import (
+    get_launchpad)
+
+
+def main(args):
+    if len(args) < 3:
+        print __doc__
+        return 1
+    lp = get_launchpad('lptools on %s' % (socket.gethostname(),))
+    team_name = args[1]
+    team = lp.people[team_name]
+    members_details = team.members_details
+    for exile_name in args[2:]:
+        print 'remove %s from %s...' % (exile_name, team_name),
+        for m in members_details:
+            if m.member.name == exile_name:
+                m.setStatus(status='Deactivated')
+                print 'done'
+                break
+        else:
+            print 'not a member?'
+                
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
