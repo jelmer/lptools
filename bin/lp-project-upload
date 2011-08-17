@@ -1,0 +1,175 @@
+#!/usr/bin/python
+
+# Copyright (c) 2009 Canonical Ltd.
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2, or (at your option) any
+# later version.
+#
+# lp-project-upload is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+# Authors:
+#  Martin Pitt <martin.pitt@ubuntu.com>, based on
+#  http://blog.launchpad.net/api/recipe-for-uploading-files-via-the-api
+#  Dustin Kirkland <kirkland@ubuntu.com>
+#  - support files for changelog and release notes
+
+'''Upload a release tarball to a Launchpad project.'''
+
+import datetime
+import os
+import sys
+import tempfile
+
+from launchpadlib.errors import HTTPError
+
+import subprocess
+
+from lptools import config
+
+def create_release(project, version):
+    '''Create new release and milestone for LP project.'''
+
+    print 'Release %s could not be found for project. Create it? (Y/n)' % \
+          version
+    answer = sys.stdin.readline().strip()
+    if answer.startswith('n'):
+        sys.exit(0)
+
+    n_series = len(project.series)
+    if n_series == 1:
+        series = project.series[0]
+    elif n_series > 1:
+        msg = 'More than one series exist. Which one would you like to ' \
+              'upload to? Possible series are (listed as index, name):'
+        print msg
+        for idx, serie in enumerate(project.series):
+            print '\t%i - %s' % (idx, serie.name)
+        print 'Enter series index: '
+        answer = sys.stdin.readline().strip()
+        try:
+            series = project.series[int(answer)]
+        except (ValueError, IndexError):
+            print >> sys.stderr, 'The series index is invalid (%s).' % answer
+            sys.exit(3)
+        else:
+            print "Using series named '%s'" % series.name
+    else:
+        print >> sys.stderr, ('Does not support creating releases if no '
+                              'series exists.')
+        sys.exit(3)
+
+    release_date = datetime.date.today().strftime('%Y-%m-%d')
+    milestone = series.newMilestone(name=version,
+            date_targeted=release_date)
+    return milestone.createProductRelease(date_released=release_date)
+
+def edit_file(prefix, description):
+    (fd, f) = tempfile.mkstemp(prefix=prefix+'.')
+    os.write(fd, '\n\n#------\n# Please enter the %s here. '
+                 'Lines which start with "#" are ignored.\n' % description)
+    os.close(fd)
+    subprocess.call(['sensible-editor', f])
+    return cat_file(f)
+
+def cat_file(f):
+    content = ''
+    for line in open(f):
+        if line.startswith('#'):
+            continue
+        content += line
+    return content.strip()
+
+def main():
+    if len(sys.argv) < 4 or len(sys.argv) > 7:
+        print >> sys.stderr, '''Upload a release tarball to a Launchpad project.
+
+    Usage: %s <project name> <version> <tarball> [new milestone] [changelog file] [releasenotes file]''' % sys.argv[0]
+        sys.exit(1)
+
+    new_milestone = None
+    changelog_file = None
+    releasenotes_file = None
+    if len(sys.argv) == 4:
+        (project, version, tarball) = sys.argv[1:]
+    elif len(sys.argv) == 5:
+        (project, version, tarball, new_milestone) = sys.argv[1:]
+    elif len(sys.argv) == 6:
+        (project, version, tarball, new_milestone, changelog_file) = sys.argv[1:]
+    elif len(sys.argv) == 7:
+        (project, version, tarball, new_milestone, changelog_file, releasenotes_file) = sys.argv[1:]
+
+    launchpad = config.get_launchpd("project-upload")
+
+    try:
+        # Look up the project using the Launchpad instance.
+        proj = launchpad.projects[project]
+        # Find the release in the project's releases collection.
+        release = None
+        for rel in proj.releases:
+            if rel.version == version:
+                release = rel
+                break
+        if not release:
+            for milestone in proj.all_milestones:
+                if milestone.name == version:
+                    today = datetime.date.today().strftime('%Y-%m-%d')
+                    release = milestone.createProductRelease(date_released=today)
+        if not release:
+            release = create_release(proj, version)
+
+        # Get the file contents.
+        file_content = open(tarball, 'r').read()
+        # Get the signature, if available.
+        signature = tarball + '.asc'
+        if not os.path.exists(signature):
+            print 'Calling GPG to create tarball signature...'
+            cmd = ['gpg', '--armor', '--sign', '--detach-sig', tarball]
+            if subprocess.call(cmd) != 0:
+                print >> sys.stderr, 'gpg failed, aborting'
+
+        if os.path.exists(signature):
+            signature_content = open(signature, 'r').read()
+        else:
+            signature_content = None
+
+        # Create a new product release file.
+        filename = os.path.basename(tarball)
+        release.add_file(filename=filename, description='release tarball',
+                file_content=file_content, content_type='appplication/x-gzip',
+                file_type='Code Release Tarball', signature_filename=signature,
+                signature_content=signature_content)
+
+        if changelog_file is not None:
+            changelog = cat_file(changelog_file)
+        else:
+            changelog = edit_file('changelog', 'changelog')
+        if changelog:
+            release.changelog = changelog
+
+        if releasenotes_file is not None:
+            release_notes = cat_file(releasenotes_file)
+        else:
+            release_notes = edit_file('releasenotes', 'release notes')
+        if release_notes:
+            release.release_notes = release_notes
+
+        release.lp_save()
+
+        # Create a new milestone if requested
+        if new_milestone is not None:
+            mil = release.milestone
+            for series in proj.series:
+                if mil.name in [milestone.name for milestone in series.all_milestones]:
+                    series.newMilestone(name=new_milestone)
+
+    except HTTPError, error:
+        print 'An error happened in the upload:', error.content
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()
