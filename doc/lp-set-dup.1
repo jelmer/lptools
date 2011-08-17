@@ -1,0 +1,56 @@
+.TH lp\-set\-dup "1" "March 6 2010" "ubuntu-dev-tools"
+.SH NAME
+lp\-set\-dup \- mark one or more bugs as duplicate of another bug
+
+.SH SYNOPSIS
+.B lp\-set\-dup \fR[\fB\-f\fR] <\fImain bug\fR> <\fIduplicate bug\fR>
+[<\fIduplicate bug\fR> ...]
+.br
+.B lp\-set\-dup \-\-help
+
+.SH DESCRIPTION
+\fBlp\-set\-dup\fR allow to easily mark one or more bug as duplicate of
+another bug. It checks for permission to operate on a given bug first,
+then perform required tasks on Launchpad.
+
+.SH OPTIONS
+Listed below are the command line options for \fBlp\-set\-dup\fR:
+.TP
+.BR \-h ", " \-\-help
+Display a help message and exit.
+.TP
+.B \-f
+Skip confirmation prompt.
+.TP
+.B \-l \fIINSTANCE\fR, \fB\-\-lpinstance\fR=\fIINSTANCE\fR
+Use the specified instance of Launchpad (e.g. "staging"), instead of
+the default of "production".
+.TP
+.B \-\-no\-conf
+Do not read any configuration files, or configuration from environment
+variables.
+
+.SH ENVIRONMENT
+All of the \fBCONFIGURATION VARIABLES\fR below are also supported as
+environment variables.
+Variables in the environment take precedence to those in configuration
+files.
+
+.SH CONFIGURATION VARIABLES
+The following variables can be set in the environment or in
+.BR ubuntu\-dev\-tools (5)
+configuration files.
+In each case, the script\-specific variable takes precedence over the
+package\-wide variable.
+.TP
+.BR LP_SET_DUP_LPINSTANCE ", " UBUNTUTOOLS_LPINSTANCE
+The default value for \fB--lpinstance\fR.
+
+.SH SEE ALSO
+.BR ubuntu\-dev\-tools (5)
+
+.SH AUTHORS
+\fBlp\-set\-dup\fR was written by Loïc Minier <lool@dooz.org>,
+and this manual page was written by Luca Falavigna <dktrkranz@debian.org>.
+.PP
+Both are released under the terms of the GNU General Public License, version 2.

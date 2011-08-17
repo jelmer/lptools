@@ -1,0 +1,27 @@
+.TH lp\-list\-bugs 1 2010-09-17 ubuntu-dev-tools
+.SH NAME
+lp\-list\-bugs \- briefly list status of Launchpad bugs
+.SH DESCRIPTION
+.B lp\-list\-bugs
+takes one or more Launchpad bug numbers, and lists the status of each bug in a
+concise format.
+For example:
+.PP
+.RS
+.nf
+$ lp\-list\-bugs 3
+Bug 3: Custom information for each translation team
+  rosetta: Fix Released
+  ubuntu: Invalid
+  mono (Ubuntu): Invalid
+.fi
+.RE
+.SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Display a help message and exit.
+.SH AUTHORS
+.B lp\-list\-bugs
+and this manual page were written by Colin Watson <cjwatson@ubuntu.com>.
+Both are released under the terms of the GNU General Public License, version
+3 or later.
