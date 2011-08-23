@@ -1,0 +1,87 @@
+#!/usr/bin/python
+#
+# Copyright (C) 2007, Canonical Ltd.
+# Written by Daniel Holbach,
+#            Stefano Rivera,
+#            Brian Murray
+#
+# ##################################################################
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# See file /usr/share/common-licenses/GPL-3 for more details.
+#
+# ##################################################################
+
+from optparse import OptionParser
+import errno
+import os
+
+from lptools import config
+
+USAGE = "grab-attachments <bug numbers>"
+
+
+def download_attachments(bug):
+
+    bug_folder_name = 'bug-%s' % bug.id
+
+    try:
+        os.mkdir(bug_folder_name)
+    except OSError, error:
+        if error.errno == errno.EEXIST:
+            return
+
+    for attachment in bug.attachments:
+        f = attachment.data.open()
+        filename = os.path.join(os.getcwd(), bug_folder_name, f.filename)
+        local_file = open(filename, "w")
+        local_file.write(f.read())
+        f.close()
+        local_file.close()
+
+
+def main():
+    parser = OptionParser('Usage: %prog [options] <bug numbers>')
+    parser.add_option('-d', '--duplicates', default=False,
+                      action='store_true',
+                      help='Download attachments from duplicates too')
+    parser.add_option('-p', '--package',
+                      help='Download attachments from all bugs with a '
+                           'task for this Ubuntu source package')
+
+    opts, args = parser.parse_args()
+    if len(args) < 1 and not opts.package:
+        parser.error('No bug numbers provided')
+    launchpad = config.get_launchpad("grab-attachments")
+
+    if opts.package:
+        ubuntu = launchpad.projects['ubuntu']
+        src_package = ubuntu.getSourcePackage(name=opts.package)
+        if src_package is None:
+            parser.error('Unable to find package %s' % opts.package)
+        for task in src_package.searchTasks():
+            args.append(task.bug.id)
+
+    for arg in args:
+        try:
+            bug_number = int(arg)
+        except ValueError:
+            parser.error("'%s' is not a valid bug number." % arg)
+
+        bug = launchpad.bugs[bug_number]
+        download_attachments(bug)
+
+        if opts.duplicates is True:
+            for bug in bug.duplicates:
+                download_attachments(bug)
+
+if __name__ == '__main__':
+    main()
