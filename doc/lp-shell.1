@@ -1,0 +1,52 @@
+.TH lp-shell "1" "27 March 2010" "lptools"
+.SH NAME
+lp\-shell \- Open an interactive launchpadlib shell.
+
+.SH SYNOPSIS
+.B lp\-shell
+.RB [ \-a ]
+.RB [ \-\-python ]
+.RB [ \-\-ipython ]
+.RI [ service ]
+.RI [ "LP API version" ]
+
+.SH DESCRIPTION
+.B lp\-shell
+opens an interactive Python shell with a launchpadlib.Launchpad object "lp"
+which is ready for use.
+
+It authenticates against Launchpad with the consumer name "udt-lp-shell". When
+using \fBlp\-shell\fR with the \fB\-a\fR option it will use the anonymous login
+from launchpadlib.Launchpad.
+
+By default \fBlp\-shell\fR connects to the "\fIproduction\fR" Launchpad service
+using the "\fI1.0\fR" LP API version.
+
+If you want to connect to another Launchpad service, call \fBlp\-shell\fR with
+the service name as the second argument. \fBlp\-shell\fR supports all services
+known by launchpadlib Python module.
+Currently known are (list can be incomplete or outdated): "production",
+"staging", "dogfood".
+
+A different LP API version can be selected by passing the API version to use as
+the third argument. Current supported are: "beta", "1.0" and "devel".
+
+.SH OPTIONS
+.TP
+.B \-a
+Login anonymously into Launchpad.
+
+.TP
+.B \-\-ipython
+Use an ipython shell if available (default).
+
+.TP
+.B \-\-python
+Use a regular python shell.
+
+.SH AUTHORS
+.B lp\-shell
+was written by Martin Pitt <martin.pitt@ubuntu.com>.
+.PP
+It is released under the terms of the GNU General Public License, version 2
+or (at your option) any later version.
