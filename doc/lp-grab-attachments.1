@@ -1,0 +1,41 @@
+.TH GRAB\-ATTACHMENTS "1" "10 August 2008" "lptools"
+.SH NAME
+grab\-attachments \- downloads attachments from a Launchpad bug
+.SH SYNOPSIS
+.B grab\-attachments\fR [\fIoptions\fR] \fIbug-number\fR...
+.br
+.B grab\-attachments \-h
+.SH DESCRIPTION
+\fBgrab\-attachments\fR is a script to download all attachments from a
+Launchpad bug report or bug reports with a source package task into
+a directory named after the bug e.g. bug-1.
+
+.SH OPTIONS
+Listed below are the command line options for grab\-attachments:
+.TP
+.I bug-number
+Specifies the Launchpad bug number that the script should download
+attachments from.
+.TP
+.BR \-h ", " \-\-help
+Display a help message and exit.
+.TP
+.B \-l \fIINSTANCE\fR, \fB\-\-lpinstance\fR=\fIINSTANCE\fR
+Use the specified instance of Launchpad (e.g. "staging"), instead of
+the default of "production".
+.TP
+.B \-\-no\-conf
+Do not read any configuration files, or configuration from environment
+variables.
+.TP
+.BR \-d ", " \-\-duplicates
+Download attachments from duplicates too.
+.TP
+.B \-p \fISRCPACKAGE\fR, \fB\-\-package\fR=\fISRCPACKAGE\fR
+Download attachments from all bugs with a task for this source
+package.
+.SH AUTHOR
+\fBlp-grab\-attachments\fR was written by Daniel Holbach and this manual page
+was written by Jonathan Patrick Davies.
+.PP
+Both are released under the GNU General Public License, version 3.
