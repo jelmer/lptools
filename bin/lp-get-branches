@@ -1,0 +1,120 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2007 Canonical Ltd.
+# Created by Daniel Holbach <daniel.holbach@ubuntu.com>
+# Modified by Jonathan Patrick Davies <jpds@ubuntu.com>
+#
+# ##################################################################
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# See file /usr/share/common-licenses/GPL-3 for more details.
+#
+# ##################################################################
+#
+# This script is used to checkout or branch all the Bazaar branches
+# of a Launchpad team.
+#
+
+import os
+import subprocess
+import sys
+from lptools import config
+from optparse import OptionParser
+
+def main():
+    usage = "Usage: %prog [-d <directory>] -t <team> [-o <operation>]"
+    usage += "\nUsage: %prog <team>"
+    opt_parser = OptionParser(usage)
+
+    # Our options.
+    opt_parser.add_option("-d", "--directory", action="store", type="string",
+                          dest="directory", default=os.getcwd(),
+                          help="Directory to download branches to.")
+    opt_parser.add_option("-t", "--team", action="store", type="string",
+                          dest="lpteam",
+                          help="Launchpad team to download branches from.")
+    opt_parser.add_option("-o", "--operation", action="store", type="string",
+                          dest="operation", default="branch",
+                          help="Whether to branch or checkout the Bazaar "
+                               "branches. May be either 'branch' or "
+                               "'checkout'.")
+
+    (options, args) = opt_parser.parse_args()
+
+    launchpad = config.get_launchpad("get-branches")
+
+    # Fetch our current directory to return to later.
+    pwd = os.getcwd()
+
+    # Parse our options.
+    if len(args) != 1 and options.lpteam == None:
+        opt_parser.error("No team has been specified.")
+
+    # Dictionary settings.
+    directory = options.directory
+    if not os.path.isdir(directory): # Check that it is a directory.
+        opt_parser.error("%s is not a valid directory." % directory)
+    os.chdir(directory)
+
+    # Type of Bazaar operation to perform.
+    operation_type = options.operation.lower()
+    if operation_type not in ("branch", "checkout"):
+        opt_parser.error("Invalid operation '%s' for '-o' flag." % \
+            operation_type)
+
+    # Launchpad team setting.
+    if options.lpteam:
+        team = options.lpteam.lower()
+    if args:
+        team = args[0].lower()
+    try:
+        team = launchpad.people[team]
+    except KeyError:
+        print >> sys.stderr, "E: The team '%s' doesn't exist." % team
+
+    # Get a list of branches
+    branches = team.getBranches()
+
+    print "Downloading all branches for the '%s' team. This may take some " \
+        "time." % team.display_name
+
+    try:
+        os.makedirs(team.name)
+    except:
+        pass
+
+    os.chdir(team.name)
+
+    for branch in branches:
+        project_name = branch.project.name
+        if not os.path.exists(project_name):
+            os.makedirs(project_name)
+        os.chdir(project_name)
+
+        if not os.path.exists(branch.name):
+            print "Branching %s ..." % branch.display_name
+            cmd = ["bzr", operation_type, branch.bzr_identity, branch.name]
+            subprocess.call(cmd)
+        else:
+            print "Merging %s ..." % branch.display_name
+            os.chdir(branch.name)
+            subprocess.call(["bzr", "merge", "--pull", "--remember"])
+        os.chdir(os.path.join(directory, team.name))
+
+    os.chdir(pwd)
+    sys.exit(0)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print "Operation was interrupted by user."
