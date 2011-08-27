@@ -43,4 +43,4 @@ def get_launchpad(appname):
     :param appname: The name of the app used to create per-app
         cachedirs.
     """
-    return Launchpad.login_with("ĺptools-%s" % appname)
+    return Launchpad.login_with("lptools-%s" % appname, "production")
