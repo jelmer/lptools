@@ -78,10 +78,13 @@ def source_build_find_version(source_build):
         if m:
             source_name = m.group(1)
     if not source_name:
-        raise Exception("unable to find source name in %s" % source_build.build_log_url)
+        raise Exception("unable to find source name in %s" %
+            source_build.build_log_url)
     if not version:
-        raise Exception("unable to find version in %s" % source_build.build_log_url)
-    cache["version/%s" % str(source_build.self_link)] = "%s %s" % (source_name, version)
+        raise Exception("unable to find version in %s" %
+            source_build.build_log_url)
+    cache["version/%s" % str(source_build.self_link)] = "%s %s" % (
+        source_name, version)
     return (source_name, version)
 
 
@@ -90,7 +93,8 @@ def find_binary_builds(recipe, source_builds):
     for source_build in source_builds:
         archive = source_build.archive
         (source_name, version) = source_build_find_version(source_build)
-        sources = archive.getPublishedSources(distro_series=source_build.distro_series,
+        sources = archive.getPublishedSources(
+            distro_series=source_build.distro_series,
             exact_match=True, pocket="Release", source_name=source_name,
             version=version)
         assert len(sources) == 1
