@@ -19,6 +19,7 @@ from __future__ import with_statement
 """Configuration glue for lptools."""
 
 __all__ = [
+    "data_dir",
     "ensure_dir",
     "get_launchpad",
     ]
@@ -44,3 +45,15 @@ def get_launchpad(appname):
         cachedirs.
     """
     return Launchpad.login_with("lptools-%s" % appname, "production")
+
+
+def data_dir():
+    """Return the arch-independent data directory.
+    """
+    # Running from source directory?
+    ret = os.path.join(os.path.dirname(__file__), "..")
+    if os.path.exists(os.path.join(ret, "templates")):
+        return ret
+    else:
+        return os.path.abspath(os.path.join(os.path.dirname(__file__),
+            "../../../../share/lptools"))

@@ -16,6 +16,8 @@ setup(
     description='A collection of tools for developers who use launchpad',
     long_description=description,
     py_modules=[],
+    data_files=[('share/lptools/templates', ['templates/recipe-status.css',
+                                             'templates/recipe-status.html'])],
     packages=['lptools'],
     scripts=glob('bin/*'),
     classifiers = [
