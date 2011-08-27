@@ -1,0 +1,47 @@
+.TH get\-branches "1" "11 August 2008" "ubuntu-dev-tools"
+.SH NAME
+get\-branches - downloads all branches related to a Launchpad team or person
+
+.SH SYNOPSIS
+.B get\-branches
+.RB [ \-d
+.IR directory ]
+.RB [ \-o
+.BR branch | checkout ]
+.B \-t
+.I team
+.br
+.B get\-branches
+.I team
+.br
+.B get\-branches \-\-help
+
+.SH DESCRIPTION
+\fBget\-branches\fR uses the LP API to get a list of branches for a person or
+team and calls Bazaar to download all branches.
+
+.SH OPTIONS
+Listed below are the command line options for \fBget\-branches\fR:
+.TP
+.BR \-h ", " \-\-help
+Display a help message and exit.
+.TP
+.BR \-d ", " \-\-directory
+Download branches to a directory other than the current directory.
+.TP
+.BR \-o ", " \-\-operation
+Specifies which Bazaar operation to use when downloading the branches; may be
+either \fIbranch\fR or \fIcheckout\fR.
+.TP
+.BR \-t ", "  \-\-team
+Specifies which Launchpad team/person to download branches from.
+This option is required.
+
+.SH AUTHORS
+\fBget\-branches\fR was written by Daniel Holbach <daniel.holbach@ubuntu.com>,
+and this manual page was written by Jonathan Patrick Davies <jpds@ubuntu.com>.
+.PP
+Both are released under the terms of the GNU General Public License, version 3.
+
+.SH SEE ALSO
+.B bzr(1)

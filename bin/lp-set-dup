@@ -1,0 +1,123 @@
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+"""Sets the "duplicate of" bug of a bug and its dups."""
+
+# Copyright (c) 2009 Canonical Ltd.
+#
+# lp-set-dup is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 3, or (at your option) any
+# later version.
+#
+# lp-set-dup is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with lp-set-dup; see the file COPYING.  If not, write to the Free
+# Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301, USA.
+#
+# Authors:
+#  Loïc Minier <lool@dooz.org>
+
+import sys
+from optparse import OptionParser
+
+from launchpadlib.launchpad import Launchpad
+from launchpadlib.errors import HTTPError
+
+from lptools import config
+
+from ubuntutools.config import UDTConfig
+
+def die(message):
+    print >> sys.stderr, "Fatal: " + message
+    sys.exit(1)
+
+def main():
+    usage = "Usage: %prog [-f] <new main bug> <bug to dup> [<bug to dup>...]"
+    opt_parser = OptionParser(usage)
+    opt_parser.add_option("-f",
+                          help="Skip confirmation prompt",
+                          dest="force", default=False, action="store_true")
+    opt_parser.add_option("-l", "--lpinstance", metavar="INSTANCE",
+                          help="Launchpad instance to connect to "
+                               "(default: production)",
+                          dest="lpinstance", default=None)
+    opt_parser.add_option("--no-conf",
+                          help="Don't read config files or "
+                               "environment variables.",
+                          dest="no_conf", default=False, action="store_true")
+    (options, args) = opt_parser.parse_args()
+
+    if len(args) < 2:
+        opt_parser.error("Need at least a new main bug and a bug to dup")
+
+    launchpad = config.get_launchpad("set-dup")
+
+    # check that the new main bug isn't a duplicate
+    try:
+        new_main_bug = launchpad.bugs[args[0]]
+    except HTTPError, error:
+        if error.response.status == 401:
+            print >> sys.stderr, ("E: Don't have enough permissions to access "
+                                  "bug %s") % (args[0])
+            die(error.content)
+        else:
+            raise
+    new_main_dup_of = new_main_bug.duplicate_of
+    if new_main_dup_of is not None:
+        answer = None
+        try:
+            answer = raw_input("Bug %s is a duplicate of %s; would you like to "
+                               "use %s as the new main bug instead? [y/N]" % \
+                               (new_main_bug.id, new_main_dup_of.id,
+                                new_main_dup_of.id))
+        except:
+            die("Aborted")
+        if answer.lower() not in ("y", "yes"):
+            die("User aborted")
+        new_main_bug = new_main_dup_of
+
+    # build list of bugs to process, first the dups then the bug
+    bugs_to_process = []
+    for bug_number in args[1:]:
+        print "Processing %s" % (bug_number)
+        try:
+            bug = launchpad.bugs[bug_number]
+        except HTTPError, error:
+            if error.response.status == 401:
+                print >> sys.stderr, ("W: Don't have enough permissions to "
+                                      "access bug %s") % (bug_number)
+                print >> sys.stderr, "W: %s" % (error.content)
+                continue
+            else:
+                raise
+        dups = bug.duplicates
+        if dups is not None:
+            bugs_to_process.extend(dups)
+            print "Found %i dups for %s" % (len(dups), bug_number)
+        bugs_to_process.append(bug)
+
+    # process dups first, then their main bug
+    print "Would set the following bugs as duplicates of %s: %s" % \
+          (new_main_bug.id, " ".join([str(b.id) for b in bugs_to_process]))
+
+    if not options.force:
+        answer = None
+        try:
+            answer = raw_input("Proceed? [y/N]")
+        except:
+            die("Aborted")
+        if answer.lower() not in ("y", "yes"):
+            die("User aborted")
+
+    for bug in bugs_to_process:
+        print "Marking bug %s as a duplicate of %s" % (bug.id, new_main_bug.id)
+        bug.duplicate_of = new_main_bug
+        bug.lp_save()
+
+if __name__ == '__main__':
+    main()

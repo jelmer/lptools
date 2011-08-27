@@ -1,0 +1,61 @@
+#! /usr/bin/python
+# -*- coding: UTF-8 -*-
+"""Briefly list status of Launchpad bugs."""
+
+# Copyright (c) 2010 Canonical Ltd.
+#
+# lp-set-dup is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 3, or (at your option) any
+# later version.
+#
+# lp-set-dup is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with lp-set-dup; see the file COPYING.  If not, write to the Free
+# Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301, USA.
+#
+# Authors:
+#  Colin Watson <cjwatson@ubuntu.com>
+
+import sys
+from optparse import OptionParser
+
+from lptools import config
+
+from launchpadlib.errors import HTTPError
+
+
+def main():
+    usage = "Usage: %prog <bug> [...]"
+    parser = OptionParser(usage)
+    args = parser.parse_args()[1]
+    if len(args) < 1:
+        parser.error("Need at least one bug number")
+
+    launchpad = config.get_launchpad("list-bugs")
+
+    for bugnum in args:
+        try:
+            bug = launchpad.bugs[bugnum]
+            print "Bug %s: %s" % (bugnum, bug.title)
+            for task in bug.bug_tasks:
+                print "  %s: %s" % (task.bug_target_name, task.status)
+        except HTTPError, error:
+            if error.response.status == 401:
+                print >> sys.stderr, \
+                    ("E: Don't have enough permissions to access bug %s" %
+                     bugnum)
+                print >> sys.stderr, error.content
+                continue
+            elif error.response.status == 404:
+                print >> sys.stderr, "E: Bug %s not found" % bugnum
+            else:
+                raise
+
+if __name__ == '__main__':
+    main()

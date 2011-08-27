@@ -1,0 +1,112 @@
+#!/usr/bin/python
+
+# Open an interactive launchpadlib Python shell.
+# It supports all known LP service instances and API versions. The login
+# can optionally happen anonymously.
+
+# Author: Martin Pitt <martin.pitt@ubuntu.com>
+# Copyright: (C) 2010 Canonical Ltd.
+#
+# This package is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, at version 2.
+#
+# This package is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+import sys
+import code
+from optparse import OptionParser
+
+from launchpadlib.launchpad import Launchpad
+from launchpadlib.uris import lookup_service_root
+
+def main():
+    instance = 'production'
+    valid_api_versions = ('beta', '1.0', 'devel')
+    api_version = '1.0'
+
+    usage = 'Usage: %prog [-a] [instance] [LP API version]'
+    opt_parser = OptionParser(usage)
+    opt_parser.add_option('-a', action='store_true',
+                          dest='anonymous', default=False,
+                          help='Login anonymously into LP.')
+    opt_parser.add_option('--ipython',action='store_const',
+                          dest='shell',const='ipython', default="ipython",
+                          help='Use ipython shell (default).')
+    opt_parser.add_option('--python',action='store_const',
+                          dest='shell',const='python',
+                          help='Use python shell.')
+
+
+    (options, args) = opt_parser.parse_args()
+
+    if len(args) >= 1:
+        try:
+            instance = lookup_service_root(args[0])
+        except ValueError, err:
+            print 'E: %s' % (err)
+            print 'I: Falling back to "production".'
+
+    if len(args) >= 2:
+        if args[1] in valid_api_versions:
+            api_version = args[1]
+        else:
+            print 'E: "%s" is not a valid LP API version.' % (args[1])
+            print 'I: Falling back to "1.0".'
+
+    if options.anonymous:
+        launchpad = Launchpad.login_anonymously('lp-shell', instance,
+                                                version=api_version)
+        banner = ('Connected anonymously to LP service "%s" with API version '
+                  '"%s":' % (instance, api_version))
+    else:
+        launchpad = Launchpad.login_with('lp-shell', instance,
+                                         version=api_version)
+        banner = 'Connected to LP service "%s" with API version "%s":' % \
+                 (instance, api_version)
+
+    banner += '\nNote: LP can be accessed through the "lp" object.'
+
+    sh = None
+    if options.shell == "ipython":
+        try:
+            try: # ipython >= 0.11
+                from IPython.frontend.terminal.embed import InteractiveShellEmbed
+                sh = InteractiveShellEmbed(banner2=banner, user_ns={'lp': launchpad})
+            except ImportError: # ipython < 0.11
+                # pylint does not handle nested try-except, disable import error
+                # pylint: disable-msg=E0611
+                from IPython.Shell import IPShellEmbed
+                sh = IPShellEmbed(argv=[], user_ns={'lp': launchpad})
+                sh.set_banner(sh.IP.BANNER + '\n' + banner)
+            sh.excepthook = sys.__excepthook__
+        except ImportError:
+            print "E: ipython not available. Using normal python shell."
+
+    if sh:
+        sh()
+    else:
+        class CompleterConsole(code.InteractiveConsole):
+            def __init__(self):
+                local = {'lp': launchpad}
+                code.InteractiveConsole.__init__(self, locals=local)
+                try:
+                    import readline
+                except ImportError:
+                    print 'I: readline module not available.'
+                else:
+                    import rlcompleter
+                    readline.parse_and_bind("tab: complete")
+
+        # Disable default apport hook, as lp-shell is intended for interactive use
+        # and thus exceptions often bubble up to the top level.
+        sys.excepthook = sys.__excepthook__
+
+        console = CompleterConsole()
+        console.interact(banner)
+
+if __name__ == '__main__':
+    main()
