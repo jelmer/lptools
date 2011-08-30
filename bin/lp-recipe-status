@@ -43,6 +43,9 @@ else:
 def gather_per_distroseries_source_builds(recipe):
     last_per_distroseries = {}
     for build in recipe.completed_builds:
+        if build.distro_series.self_link not in recipe.distroseries:
+            # Skip distro series that are no longer being build
+            continue
         distro_series_name = build.distro_series.name
         previous_build = last_per_distroseries.get(distro_series_name)
         if previous_build is None or previous_build.datecreated < build.datecreated:
