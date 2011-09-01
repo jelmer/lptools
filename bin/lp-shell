@@ -33,11 +33,11 @@ def main():
     opt_parser.add_option('-a', action='store_true',
                           dest='anonymous', default=False,
                           help='Login anonymously into LP.')
-    opt_parser.add_option('--ipython',action='store_const',
-                          dest='shell',const='ipython', default="ipython",
+    opt_parser.add_option('--ipython', action='store_const',
+                          dest='shell', const='ipython', default="ipython",
                           help='Use ipython shell (default).')
-    opt_parser.add_option('--python',action='store_const',
-                          dest='shell',const='python',
+    opt_parser.add_option('--python', action='store_const',
+                          dest='shell', const='python',
                           help='Use python shell.')
 
 
