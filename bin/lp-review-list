@@ -17,9 +17,6 @@
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import with_statement
-from ConfigParser import ConfigParser
-from launchpadlib.launchpad import EDGE_SERVICE_ROOT
-import os
 import re
 import subprocess
 from threading import Thread
@@ -28,7 +25,6 @@ import pygtk
 pygtk.require('2.0')
 import gobject
 import gtk
-from xdg.BaseDirectory import xdg_config_home
 
 from lptools import config
 
