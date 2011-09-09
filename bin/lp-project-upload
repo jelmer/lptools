@@ -103,7 +103,7 @@ def main():
     elif len(sys.argv) == 7:
         (project, version, tarball, new_milestone, changelog_file, releasenotes_file) = sys.argv[1:]
 
-    launchpad = config.get_launchpd("project-upload")
+    launchpad = config.get_launchpad("project-upload")
 
     try:
         # Look up the project using the Launchpad instance.
