@@ -23,6 +23,9 @@ from optparse import OptionParser
 from launchpadlib.launchpad import Launchpad
 from launchpadlib.uris import lookup_service_root
 
+def run_command(command, lp):
+    exec(command)
+
 def main():
     instance = 'production'
     valid_api_versions = ('beta', '1.0', 'devel')
@@ -33,6 +36,9 @@ def main():
     opt_parser.add_option('-a', action='store_true',
                           dest='anonymous', default=False,
                           help='Login anonymously into LP.')
+    opt_parser.add_option('-c', type=str,
+                          dest='command', default=None,
+                          help='Program passed as string.')
     opt_parser.add_option('--ipython', action='store_const',
                           dest='shell', const='ipython', default="ipython",
                           help='Use ipython shell (default).')
@@ -67,6 +73,10 @@ def main():
                                          version=api_version)
         banner = 'Connected to LP service "%s" with API version "%s":' % \
                  (instance, api_version)
+
+    if options.command is not None:
+        run_command(options.command, launchpad)
+        return
 
     banner += '\nNote: LP can be accessed through the "lp" object.'
 
