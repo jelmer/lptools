@@ -220,7 +220,7 @@ def recipe_status_text(recipes, outf):
             outf.write("%s never built\n" % recipe.name)
         binary_builds = find_binary_builds(recipe, sp_success)
         for source_build in sp_success:
-            for binary_build in binary_builds[source_build]:
+            for binary_build in binary_builds.get(source_build, []):
                 if binary_build.buildstate != "Successfully built":
                     url = build_failure_link(binary_build)
                     outf.write("  %s,%s(%s)" %
