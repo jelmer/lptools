@@ -5,6 +5,7 @@ lp\-shell \- Open an interactive launchpadlib shell.
 .SH SYNOPSIS
 .B lp\-shell
 .RB [ \-a ]
+.RB [ \-c PROGRAM ]
 .RB [ \-\-python ]
 .RB [ \-\-ipython ]
 .RI [ service ]
@@ -35,6 +36,10 @@ the third argument. Current supported are: "beta", "1.0" and "devel".
 .TP
 .B \-a
 Login anonymously into Launchpad.
+
+.TP
+.B \-c PROGRAM
+Don't enter a shell but only run the specified Python program and exit.
 
 .TP
 .B \-\-ipython
