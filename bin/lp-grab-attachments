@@ -26,7 +26,7 @@ import os
 
 from lptools import config
 
-USAGE = "grab-attachments <bug numbers>"
+USAGE = "lp-grab-attachments <bug numbers>"
 
 
 def download_attachments(bug):

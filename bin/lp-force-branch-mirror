@@ -1,0 +1,33 @@
+#! /usr/bin/python
+# vi: expandtab:sts=4
+
+# Copyright (C) 2011 Jelmer Vernooij
+
+"""Force a new import
+"""
+
+import optparse
+import sys
+
+from lptools import config
+
+
+def main(argv):
+    parser = optparse.OptionParser('%prog [options] BRANCH...\n\n'
+        '  PROJECT is the launchpad project to inspect (eg bzr)')
+    opts, args = parser.parse_args()
+    if len(args) != 1:
+        parser.print_usage()
+        return 1
+
+    lp = config.get_launchpad("force-branch-mirror")
+    branches = lp.branches.getByUrls(urls=args)
+    for url, branch_dict in branches.iteritems():
+        if branch_dict is None:
+            print "Branch %s not found" % url
+        else:
+            branch = lp.load(branch_dict["self_link"])
+            print "%s: %s" % (branch.bzr_identity, branch.requestMirror())
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))

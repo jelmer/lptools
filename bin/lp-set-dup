@@ -25,12 +25,9 @@
 import sys
 from optparse import OptionParser
 
-from launchpadlib.launchpad import Launchpad
 from launchpadlib.errors import HTTPError
 
 from lptools import config
-
-from ubuntutools.config import UDTConfig
 
 def die(message):
     print >> sys.stderr, "Fatal: " + message

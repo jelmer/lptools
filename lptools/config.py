@@ -24,6 +24,7 @@ __all__ = [
     "get_launchpad",
     ]
 
+import os
 import os.path
 
 from launchpadlib.launchpad import Launchpad
@@ -35,16 +36,21 @@ def ensure_dir(dir):
         os.makedirs(dir)
 
 
-def get_launchpad(appname):
+def get_launchpad(appname, instance=None):
     """Get a login to launchpad for lptools caching in cachedir.
-    
+
     Note that caching is not multiple-process safe in launchpadlib,
     and the appname parameter is used to create per-app cachedirs.
 
     :param appname: The name of the app used to create per-app
         cachedirs.
+    :param instance: Launchpad instance to use
     """
-    return Launchpad.login_with("lptools-%s" % appname, "production")
+    if instance is None:
+        instance = os.getenv("LPINSTANCE")
+    if instance is None:
+        instance = "production"
+    return Launchpad.login_with("lptools-%s" % appname, instance)
 
 
 def data_dir():

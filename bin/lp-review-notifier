@@ -24,114 +24,271 @@ import gobject
 import gtk
 import pygtk
 import pynotify
-from xdg.BaseDirectory import xdg_cache_home
+
+from ConfigParser import ConfigParser
+import subprocess
+
+from xdg.BaseDirectory import (
+    xdg_config_home,
+    )
 
 from lptools import config
 
 pygtk.require('2.0')
 
+import indicate
+from time import time
+
 ICON_NAME = "bzr-icon-64"
+
+class Preferences(object):
+
+      def __init__(self):
+            self.filename = os.path.join(xdg_config_home, "lptools",
+                                         "lptools.conf")
+            self.config = ConfigParser()
+            self.config.read(self.filename)
+            if not os.path.isdir(os.path.dirname(self.filename)):
+                  os.makedirs(os.path.dirname(self.filename))
+
+            if not self.config.has_section("lptools"):
+                  self.config.add_section("lptools")
+
+            if self.config.has_option("lptools", "projects"):
+                  self.projects = self.config.get("lptools",
+                                                  "projects").split(",")
+            else:
+                  self.projects = []
+
+            # gtk.ListStore for the dialog
+            self.store = None
+            self.dialog = self.__build_dialog()
+
+      def __build_dialog(self):
+            dialog = gtk.Dialog()
+            dialog.set_title("Pending Reviews Preferences")
+            dialog.set_destroy_with_parent(True)
+            dialog.set_has_separator(False)
+            dialog.set_default_size(240, 320)
+
+            area = dialog.get_content_area()
+
+            vbox = gtk.VBox(spacing=6)
+            vbox.set_border_width(12)
+            area.add(vbox)
+            vbox.show()
+
+            label = gtk.Label("<b>%s</b>" % "_Projects")
+            label.set_use_underline(True)
+            label.set_use_markup(True)
+            label.set_alignment(0.0, 0.5)
+            vbox.pack_start(label, expand=False, fill=False)
+            label.show()
+
+            hbox = gtk.HBox(spacing=12)
+            vbox.pack_start(hbox, expand=True, fill=True)
+            hbox.show()
+
+            misc = gtk.Label()
+            hbox.pack_start(misc, expand=False, fill=False)
+            misc.show()
+
+            scrollwin = gtk.ScrolledWindow()
+            scrollwin.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+            hbox.pack_start(scrollwin, expand=True, fill=True)
+            scrollwin.show()
+
+            self.store = gtk.ListStore(str)
+
+            view = gtk.TreeView(self.store)
+            label.set_mnemonic_widget(view)
+            view.set_headers_visible(False)
+            scrollwin.add(view)
+            view.show()
+
+            cell = gtk.CellRendererText()
+            cell.set_property("editable", True)
+            cell.connect("editing_started", self.__edit_started)
+            cell.connect("edited", self.__edit_finished)
+            col = gtk.TreeViewColumn("Project", cell, markup=0)
+            view.append_column(col)
+
+            dialog.connect("close", self.__dialog_closed, 0)
+            dialog.connect("response", self.__dialog_closed)
+
+            return dialog
+
+      def __edit_started(self, cell, editable, path):
+            return
+
+      def __edit_finished(self, sell, path, text):
+            if text == "Click here to add a project...":
+                  return
+            treeiter = self.store.get_iter_from_string(path)
+            label = "<i>%s</i>" % "Click here to add a project..."
+            self.store.set(treeiter, 0, label)
+            self.projects.append(text)
+            self.store.append([text,])
+
+      def __dialog_closed(self, dialog, response):
+            dialog.hide()
+            if len(self.projects) > 0:
+                  self.config.set("lptools", "projects",
+                                  ",".join(self.projects))
+                  with open(self.filename, "w+b") as f:
+                        self.config.write(f)
+
+      def show_dialog(self, parent):
+            if not self.dialog.get_transient_for():
+                  self.dialog.set_transient_for(parent)
+            self.store.clear()
+            text = "<i>%s</i>" % "Click here to add a project..."
+            self.store.append([text,])
+            if len(self.projects) != 0:
+                  for project in self.projects:
+                        self.store.append([project,])
+            self.dialog.run()
+
+def server_display (server):
+    ret = subprocess.call(["./review-list"])
+    if ret != 0:
+        sys.stderr.write("Failed to run './review-list'\n")
+
+def indicator_display (indicator):
+    name = indicator.get_property("name")
+    url = "http://code.launchpad.net/" + name + "/+activereviews"
+    ret = subprocess.call(["xdg-open", url])
+    if ret != 0:
+        sys.stderr.write("Failed to run 'xdg-open %s'\n" % url)
 
 class Main(object):
 
     def __init__(self):
         self.id = 0
         self.cached_candidates = {}
+
+        self.indicators = { }
+        server = indicate.indicate_server_ref_default()
+        server.set_type("message.instant")
+        server.set_desktop_file(os.path.join(os.getcwd(), "review-tools.desktop"))
+        server.connect("server-display", server_display)
+        server.show()
+
         self.launchpad = config.get_launchpad("review-notifier")
         self.me = self.launchpad.me
 
-        print "Allo, %s" % self.me.name
+        self.project_idle_ids = {}
 
-        self.projects = []
+        self.config = Preferences()
 
-        # TODO: get the config from lptools.conf
-        for arg in sys.argv:
-            if not arg.endswith("review-notifier"):
-                self.projects.append(arg)
+        if len(self.config.projects) == 0:
+            print "No Projects specified"
+            sys.exit(1)
+
+        for project in self.config.projects:
+            ind = indicate.Indicator()
+            ind.set_property("name", project)
+            ind.set_property("count", "%d" % 0)
+            ind.connect("user-display", indicator_display)
+            ind.hide()
+            self.indicators[project] = ind
 
         pynotify.init("Review Notifier")
         self.timeout()
 
     def timeout(self):
-        for project in self.projects:
-            lp_project = None
-            lp_focus = None
-            try:
-                lp_project = self.launchpad.projects[project]
-                focus = lp_project.development_focus.branch
-            except AttributeError:
-                print "Project %s has no development focus." % project
-                continue
-            except KeyError:
-                print "Project %s not found." % project
-                continue
-
-            if not focus:
-                print "Project %s has no development focus." % project
-                continue
-
-            trunk = focus
-
-            if trunk.landing_candidates:
-                for c in trunk.landing_candidates:
-                    c_name = c.source_branch.unique_name
-                    status = None
-                    try:
-                        status = self.cached_candidates[c_name]
-                    except KeyError:
-                        status = None
-
-                    # If the proposal hasn't changed, get on with it
-                    if status and status == c.queue_status:
-                        continue
-
-                    self.cached_candidates[c_name] = c.queue_status
-
-                    n = pynotify.Notification("Review Notification")
-                    updated = False
-
-                    # Source and target branch URIs
-                    source = c.source_branch.display_name
-                    target = c.target_branch.display_name
-
-                    if c.queue_status == "Needs review":
-                        # First time we see the branch
-                        n.update("Branch Proposal",
-                                 "%s has proposed merging %s into %s." % (
-                                c.registrant.display_name, source, target),
-                                 ICON_NAME)
-                        updated = True
-                    elif c.queue_status == "Approved":
-                        # Branch was approved
-                        n.update("Branch Approval",
-                                 "%s was approved for merging into %s." % (
-                                source, target),
-                                 ICON_NAME)
-                        udpated = True
-                    elif c.queue_status == "Rejected":
-                        # Branch was rejected
-                        n.update("Branch Rejected",
-                                 """The proposal to merge %s into %s has been rejected.""" % (
-                                source, target),
-                                 ICON_NAME)
-                        updated = True
-                    elif c.queue_status == "Merged":
-                        # Code has landed in the target branch
-                        n.update("Branch Merged",
-                                 "%s has been merged into %s." % (source,
-                                                                  target),
-                                 ICON_NAME)
-                        updated = True
-                    else:
-                        print "%s status is %s." % (source, c.queue_status)
-
-                    if updated:
-                        n.set_urgency(pynotify.URGENCY_LOW)
-                        n.show()
-                    else:
-                        n.close()
+        for project in self.config.projects:
+            self.project_idle_ids[project] = gobject.idle_add(self.project_idle, project)
 
         return True
+
+    def project_idle (self, project):
+        lp_project = None
+        lp_focus = None
+        try:
+            lp_project = self.launchpad.projects[project]
+            focus = lp_project.development_focus.branch
+        except AttributeError:
+            print "Project %s has no development focus." % project
+            return False
+        except KeyError:
+            print "Project %s not found." % project
+            return False
+
+        if not focus:
+            print "Project %s has no development focus." % project
+            return False
+
+        trunk = focus
+
+        if trunk.landing_candidates:
+            self.indicators[project].show()
+            for c in trunk.landing_candidates:
+                gobject.idle_add(self.landing_idle, project, c)
+        else:
+            self.indicators[project].hide()
+
+        return False
+
+    def landing_idle (self, project, c):
+        c_name = c.source_branch.unique_name
+        status = None
+        try:
+            status = self.cached_candidates[c_name]
+        except KeyError:
+            status = None
+
+        # If the proposal hasn't changed, get on with it
+        if status and status == c.queue_status:
+            return False
+
+        self.cached_candidates[c_name] = c.queue_status
+
+        n = pynotify.Notification("Review Notification")
+        updated = False
+
+        # Source and target branch URIs
+        source = c.source_branch.display_name
+        target = c.target_branch.display_name
+
+        if c.queue_status == "Needs review":
+            # First time we see the branch
+            n.update("Branch Proposal",
+                     "%s has proposed merging %s into %s." % (
+                    c.registrant.display_name, source, target),
+                     ICON_NAME)
+            updated = True
+        elif c.queue_status == "Approved":
+            # Branch was approved
+            n.update("Branch Approval",
+                     "%s was approved for merging into %s." % (
+                    source, target),
+                     ICON_NAME)
+            udpated = True
+        elif c.queue_status == "Rejected":
+            # Branch was rejected
+            n.update("Branch Rejected",
+                     """The proposal to merge %s into %s has been rejected.""" % (
+                    source, target),
+                     ICON_NAME)
+            updated = True
+        elif c.queue_status == "Merged":
+            # Code has landed in the target branch
+            n.update("Branch Merged",
+                     "%s has been merged into %s." % (source,
+                                                      target),
+                     ICON_NAME)
+            updated = True
+        else:
+            print "%s status is %s." % (source, c.queue_status)
+
+        if updated:
+            n.set_urgency(pynotify.URGENCY_LOW)
+            n.set_hint("x-canonical-append", "allow")
+            n.show()
+            self.indicators[project].set_property_time("time", time())
+        else:
+            n.close()
 
     def run(self):
         self.id = gobject.timeout_add_seconds(5 * 60, self.timeout)
@@ -139,5 +296,12 @@ class Main(object):
 
 
 if __name__ == "__main__":
-    foo = Main()
-    foo.run()
+      gobject.threads_init()
+      gtk.gdk.threads_init()
+      try:
+            foo = Main()
+            gtk.gdk.threads_enter()
+            foo.run()
+            gtk.gdk.threads_leave()
+      except KeyboardInterrupt:
+            gtk.main_quit()
