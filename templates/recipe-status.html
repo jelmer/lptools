@@ -1,0 +1,42 @@
+<html>
+  <head>
+    <title>Recipe status for <omit tal:replace="person.name"/></title>
+    <link rel="stylesheet" type="text/css" href="recipe-status.css" />
+  </head>
+
+  <body>
+    <table class="recipes">
+      <tr>
+        <th>Recipe</th>
+        <th tal:repeat="distroseries relevant_distroseries" class="recipe-column">
+          <a tal:attributes="href ubuntu.getSeries(name_or_version=distroseries).web_link" tal:content="distroseries"/>
+        </th>
+      </tr>
+      <tr tal:repeat="recipe recipes" class="recipe">
+        <td class="recipe"><a tal:attributes="href recipe.web_link" tal:content="recipe.name"/></td>
+        <distroseries tal:omit-tag="" tal:repeat="distroseries relevant_distroseries">
+          <source-build tal:omit-tag="" tal:define="global source_build source_builds[recipe.name].get(distroseries)"/>
+          <td tal:condition="not source_build" class="not-available">N/A</td>
+          <td tal:condition="source_build and source_build.buildstate != 'Successfully built'" tal:attributes="class build_class(source_build)">
+            <a tal:attributes="href build_failure_link(source_build)"
+              tal:omit-tag="not build_failure_link(source_build)"
+              tal:content="'Source:'+build_failure_summary(source_build)"/>
+          </td>
+          <source-build-success tal:omit-tag="" tal:condition="source_build and source_build.buildstate == 'Successfully built'">
+            <td tal:condition="all_binary_builds_ok[recipe.name].get(distroseries)" class="successfully-built">OK</td>
+            <td tal:condition="not all_binary_builds_ok[recipe.name].get(distroseries)" class="partial-success">
+              <binary-build tal:omit-tag="" tal:repeat="binary_build binary_builds[recipe.name][distroseries]">
+              <div tal:attributes="class build_class(binary_build)">
+                <a tal:attributes="href build_failure_link(binary_build)"
+                  tal:omit-tag="not build_failure_link(binary_build)"
+                  tal:content="binary_build.arch_tag+':'+build_failure_summary(binary_build)"/>
+                </div>
+              </binary-build>
+            </td>
+          </source-build-success>
+        </distroseries>
+      </tr>
+    </table>
+    <p>Generated using recipe-status. For the source see <a href="https://code.launchpad.net/lptools">lptools</a>.</p>
+  </body>
+</html>

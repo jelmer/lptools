@@ -1,0 +1,38 @@
+body {
+    background: url(background.png) repeat;
+    color: #222222;
+    font-family: "UbuntuBeta", Ubuntu, "Bitstream Vera Sans", "DejaVu Sans", Tahoma, sans-serif;
+    font-size: 12px;
+}
+
+a {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+a:visited {
+    color: blue;
+}
+
+.failed-to-upload, .failed-to-build {
+	background: red;
+}
+
+.chroot-problem, .dependency-wait {
+	background: orange;
+}
+
+.not-available {
+	background: gray;
+}
+
+.successfully-built {
+	background: chartreuse;
+}
+
+.partial-success {
+	background: yellow;
+}

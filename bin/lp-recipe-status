@@ -1,0 +1,253 @@
+#!/usr/bin/python
+# vi: expandtab:sts=4
+
+# Copyright (C) 2011 Jelmer Vernooij <jelmer@samba.org>
+#
+# ##################################################################
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# See file /usr/share/common-licenses/GPL-3 for more details.
+#
+# ##################################################################
+#
+
+"""Show the status of the recipes owned by a particular user.
+"""
+
+from cStringIO import StringIO
+import gzip
+import optparse
+import os
+import re
+import sys
+import urllib
+
+from lptools import config
+
+try:
+    import tdb
+except ImportError:
+    cache = {}
+else:
+    cache = tdb.Tdb("recipe-status-cache.tdb", 1000, tdb.DEFAULT,
+        os.O_RDWR|os.O_CREAT)
+
+def gather_per_distroseries_source_builds(recipe):
+    last_per_distroseries = {}
+    for build in recipe.completed_builds:
+        if build.distro_series.self_link not in recipe.distroseries:
+            # Skip distro series that are no longer being build
+            continue
+        distro_series_name = build.distro_series.name
+        previous_build = last_per_distroseries.get(distro_series_name)
+        if previous_build is None or previous_build.datecreated < build.datecreated:
+            last_per_distroseries[distro_series_name] = build
+    return last_per_distroseries
+
+
+def build_failure_link(build):
+    if build.buildstate == "Failed to upload":
+        return build.upload_log_url
+    elif build.buildstate in ("Failed to build", "Dependency wait", "Chroot problem"):
+        return build.build_log_url
+    else:
+        return None
+
+version_matcher = re.compile("^dpkg-buildpackage: source version (.*)$")
+source_name_matcher = re.compile("^dpkg-buildpackage: source package (.*)$")
+
+
+def source_build_find_version(source_build):
+    cached_version = cache.get("version/%s" % str(source_build.self_link))
+    if cached_version:
+        return tuple(cached_version.split(" "))
+    # FIXME: Find a more efficient way to retrieve the package/version that was built
+    build_log_gz = urllib.urlopen(source_build.build_log_url)
+    build_log = gzip.GzipFile(fileobj=StringIO(build_log_gz.read()))
+    version = None
+    source_name = None
+    for l in build_log.readlines():
+        m = version_matcher.match(l)
+        if m:
+            version = m.group(1)
+        m = source_name_matcher.match(l)
+        if m:
+            source_name = m.group(1)
+    if not source_name:
+        raise Exception("unable to find source name in %s" %
+            source_build.build_log_url)
+    if not version:
+        raise Exception("unable to find version in %s" %
+            source_build.build_log_url)
+    cache["version/%s" % str(source_build.self_link)] = "%s %s" % (
+        source_name, version)
+    return (source_name, version)
+
+
+def find_binary_builds(recipe, source_builds):
+    """Gather binary builds for a set of source builds.
+
+    :param recipe: Recipe to build
+    :param source_builds: Source builds to analyse
+    :return: Dictionary mapping series name to binary builds
+    """
+    ret = {}
+    for source_build in source_builds:
+        archive = source_build.archive
+        (source_name, version) = source_build_find_version(source_build)
+        sources = archive.getPublishedSources(
+            distro_series=source_build.distro_series,
+            exact_match=True, pocket="Release", source_name=source_name,
+            version=version)
+        assert len(sources) == 1
+        source = sources[0]
+        ret[source_build.distro_series.name] = source.getBuilds()
+    return ret
+
+
+def build_failure_summary(build):
+    # FIXME: Perhaps parse the relevant logs and extract a summary line?
+    return build.buildstate
+
+
+def build_class(build):
+    """Determine the CSS class for a build status.
+
+    :param build: Launchpad build object
+    :return: CSS class name
+    """
+    return {
+        "Failed to build": "failed-to-build",
+        "Failed to upload": "failed-to-upload",
+        "Dependency wait": "dependency-wait",
+        "Chroot problem": "chroot-problem",
+        "Uploading build": "uploading-build",
+        "Currently building": "currently-building",
+        "Build for superseded Source": "superseded-source",
+        "Successfully built": "successfully-built",
+        "Needs building": "needs-building",
+        }[build.buildstate]
+
+
+def filter_source_builds(builds):
+    """Filter out successful and failed builds.
+
+    :param builds: List of builds
+    :return: Tuple with set of successful and set of failed builds
+    """
+    sp_success = set()
+    sp_failures = set()
+    for build in builds:
+        if build.buildstate == "Successfully built":
+            sp_success.add(build)
+        else:
+            sp_failures.add(build)
+    return (sp_success, sp_failures)
+
+
+def recipe_status_html(launchpad, person, recipes, outf):
+    """Render a recipe status table in HTML.
+
+    :param launchpad: launchpadlib Launchpad object
+    :param person: Person owning all the recipes
+    :param recipes: List of recipes to render
+    :param outf: File-like object to write HTML to
+    """
+    from chameleon.zpt.loader import TemplateLoader
+    tl = TemplateLoader(os.path.join(config.data_dir(), "templates"))
+    relevant_distroseries = set()
+    source_builds = {}
+    binary_builds = {}
+    all_binary_builds_ok = {}
+    for recipe in recipes:
+        sys.stderr.write("Processing recipe %s\n" % recipe.name)
+        last_per_distroseries = gather_per_distroseries_source_builds(recipe)
+        source_builds[recipe.name] = last_per_distroseries
+        relevant_distroseries.update(set(last_per_distroseries))
+        (sp_success, sp_failures) = filter_source_builds(last_per_distroseries.values())
+        binary_builds[recipe.name] = find_binary_builds(recipe, sp_success)
+        all_binary_builds_ok[recipe.name] = {}
+        for distroseries, recipe_binary_builds in binary_builds[recipe.name].iteritems():
+            all_binary_builds_ok[recipe.name][distroseries] = all(
+                [bb.buildstate == "Successfully built" for bb in recipe_binary_builds])
+    relevant_distroseries = list(relevant_distroseries)
+    relevant_distroseries.sort()
+    page = tl.load("recipe-status.html")
+    outf.write(page.render(person=person,
+        relevant_distroseries=relevant_distroseries,
+        recipes=person.recipes, source_builds=source_builds,
+        build_failure_summary=build_failure_summary,
+        build_failure_link=build_failure_link,
+        binary_builds=binary_builds,
+        ubuntu=launchpad.distributions["ubuntu"],
+        build_class=build_class,
+        all_binary_builds_ok=all_binary_builds_ok))
+
+
+def recipe_status_text(recipes, outf):
+    """Display a recipe status table in plain text.
+
+    :param recipes: List of recipes to display status of
+    :param outf: file-like object to write to
+    """
+    for recipe in recipes:
+        last_per_distroseries = gather_per_distroseries_source_builds(recipe)
+        (sp_success, sp_failures) = filter_source_builds(
+            last_per_distroseries.values())
+        sp_success_distroseries = [build.distro_series.name for build in sp_success]
+        if sp_failures:
+            outf.write("%s source build failures (%s successful):" % (
+                recipe.name, ", ".join(sp_success_distroseries)))
+            for failed_build in sp_failures:
+                url = build_failure_link(failed_build)
+                outf.write("  %s(%s)" % (
+                    failed_build.distro_series.name, failed_build.buildstate))
+                if url:
+                    outf.write(": %s" % url)
+                outf.write("\n")
+        elif sp_success:
+            outf.write("%s source built successfully on %s\n" % (
+                recipe.name, ", ".join(sp_success_distroseries)))
+        else:
+            outf.write("%s never built\n" % recipe.name)
+        binary_builds = find_binary_builds(recipe, sp_success)
+        for source_build in sp_success:
+            for binary_build in binary_builds.get(source_build, []):
+                if binary_build.buildstate != "Successfully built":
+                    url = build_failure_link(binary_build)
+                    outf.write("  %s,%s(%s)" %
+                            (binary_build.distro_series.name,
+                                binary_build.arch_tag,
+                                binary_build.buildstate))
+                    if url:
+                        outf.write(": %s" % url)
+                    outf.write("\n")
+
+
+def main(argv):
+    parser = optparse.OptionParser('%prog [options] PERSON\n\n'
+        '  PERSON is the launchpad person or team whose recipes to check')
+    parser.add_option("--html", help="Generate HTML", action="store_true")
+    opts, args = parser.parse_args()
+    if len(args) != 1:
+        parser.print_usage()
+        return 1
+    person = args[0]
+    launchpad = config.get_launchpad("recipe-status")
+    person = launchpad.people[person]
+
+    if opts.html:
+        recipe_status_html(launchpad, person, person.recipes, sys.stdout)
+    else:
+        recipe_status_text(person.recipes, sys.stdout)
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))

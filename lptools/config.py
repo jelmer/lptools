@@ -19,6 +19,7 @@ from __future__ import with_statement
 """Configuration glue for lptools."""
 
 __all__ = [
+    "data_dir",
     "ensure_dir",
     "get_launchpad",
     ]
@@ -37,7 +38,7 @@ def ensure_dir(dir):
 
 def get_launchpad(appname, instance=None):
     """Get a login to launchpad for lptools caching in cachedir.
-    
+
     Note that caching is not multiple-process safe in launchpadlib,
     and the appname parameter is used to create per-app cachedirs.
 
@@ -50,3 +51,15 @@ def get_launchpad(appname, instance=None):
     if instance is None:
         instance = "production"
     return Launchpad.login_with("lptools-%s" % appname, instance)
+
+
+def data_dir():
+    """Return the arch-independent data directory.
+    """
+    # Running from source directory?
+    ret = os.path.join(os.path.dirname(__file__), "..")
+    if os.path.exists(os.path.join(ret, "templates")):
+        return ret
+    else:
+        return os.path.abspath(os.path.join(os.path.dirname(__file__),
+            "../../../../share/lptools"))
