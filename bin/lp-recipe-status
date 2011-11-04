@@ -204,7 +204,7 @@ def recipe_status_text(recipes, outf):
             last_per_distroseries.values())
         sp_success_distroseries = [build.distro_series.name for build in sp_success]
         if sp_failures:
-            outf.write("%s source build failures (%s successful):" % (
+            outf.write("%s source build failures (%s successful):\n" % (
                 recipe.name, ", ".join(sp_success_distroseries)))
             for failed_build in sp_failures:
                 url = build_failure_link(failed_build)
