@@ -12,7 +12,7 @@
           <a tal:attributes="href ubuntu.getSeries(name_or_version=distroseries).web_link" tal:content="distroseries"/>
         </th>
       </tr>
-      <tr tal:repeat="recipe recipes" class="recipe">
+      <tr tal:repeat="recipe sorted(list(recipes), key=lambda r:r.name)" class="recipe">
         <td class="recipe"><a tal:attributes="href recipe.web_link" tal:content="recipe.name"/></td>
         <distroseries tal:omit-tag="" tal:repeat="distroseries relevant_distroseries">
           <source-build tal:omit-tag="" tal:define="global source_build source_builds[recipe.name].get(distroseries)"/>
