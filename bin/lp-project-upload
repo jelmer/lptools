@@ -140,7 +140,7 @@ def main():
         # Create a new product release file.
         filename = os.path.basename(tarball)
         release.add_file(filename=filename, description='release tarball',
-                file_content=file_content, content_type='appplication/x-gzip',
+                file_content=file_content, content_type='application/x-gzip',
                 file_type='Code Release Tarball', signature_filename=signature,
                 signature_content=signature_content)
 
