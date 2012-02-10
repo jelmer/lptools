@@ -54,11 +54,14 @@ def main():
                       action='store_true',
                       help='Download attachments from duplicates too')
     parser.add_option('-p', '--package',
+                      help='Download attachments from all bugs with an '
+                           'open task for this Ubuntu source package')
+    parser.add_option('-P', '--project',
                       help='Download attachments from all bugs with a '
-                           'task for this Ubuntu source package')
+                           'open task for this project')
 
     opts, args = parser.parse_args()
-    if len(args) < 1 and not opts.package:
+    if len(args) < 1 and not opts.package and not opts.project:
         parser.error('No bug numbers provided')
     launchpad = config.get_launchpad("grab-attachments")
 
@@ -68,6 +71,14 @@ def main():
         if src_package is None:
             parser.error('Unable to find package %s' % opts.package)
         for task in src_package.searchTasks():
+            args.append(task.bug.id)
+
+    if opts.project:
+        try:
+            project = launchpad.projects['%s' % opts.project]
+        except KeyError:
+            parser.error('Unable to find project %s' % opts.project)
+        for task in project.searchTasks():
             args.append(task.bug.id)
 
     for arg in args:
