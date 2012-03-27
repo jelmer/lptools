@@ -1,0 +1,57 @@
+#! /usr/bin/python
+#
+# Copyright (C) 2009 Canonical Ltd
+
+# lp-check-membership is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 3, or (at your option) any
+# later version.
+#
+# lp-check-membership is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with lp-check-membership; see the file COPYING.  If not, write to the Free
+# Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+# 02110-1301, USA.
+#
+# Authors:
+#  Martin Pool
+
+"""lp-check-membership: Check whether a user is a member of a team.
+
+example: lp-check-membership mbp bzr
+
+Part of lptools <https://launchpad.net/lptools/>
+"""
+
+
+import optparse
+import sys
+
+from lptools import config
+
+
+def main(argv):
+    parser = optparse.OptionParser('%prog [options] PERSON GROUP')
+    opts, args = parser.parse_args()
+    if len(args) != 2:
+        print __doc__
+        return 2
+    user_name = args[0]
+    group_name = args[1]
+    lp = config.get_launchpad("check-membership")
+    user = lp.people[user_name]
+    for user_team in user.super_teams:
+        if user_team.name == group_name:
+            print '%s is a member of %s' % (user_name, group_name)
+            return 0
+    else:
+        print '%s is not a member of %s' % (user_name, group_name)
+        return 1
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
