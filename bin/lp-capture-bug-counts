@@ -1,0 +1,116 @@
+#! /usr/bin/python
+
+import sys
+
+import lptools import config
+
+project_name = 'bzr'
+
+
+def get_project():
+    sys.stderr.write('getting project... ')
+    project = launchpad.projects[project_name]
+    sys.stderr.write('%s (%s)\n' % (project.name, project.title))
+    return project
+
+
+class BugCategory(object):
+    """Holds a set of logically-related bugs"""
+
+    def __init__(self):
+        self.bugs = set()
+
+    def add(self, bt):
+        self.bugs.add(bt)
+
+    def count_bugs(self):
+        return len(self.bugs)
+
+    def get_link_url(self):
+        return None
+
+
+class HasPatchBugCategory(BugCategory):
+
+    def get_name(self):
+        return 'HasPatch'
+
+    def get_link_url(self):
+        return 'https://bugs.edge.launchpad.net/%s/+bugs' \
+            '?search=Search&field.has_patch=on' \
+            % (project_name)
+
+
+class StatusBugCategory(BugCategory):
+
+    def __init__(self, status):
+        BugCategory.__init__(self)
+        self.status = status
+
+    def get_name(self):
+        return self.status
+
+    def get_link_url(self):
+        return 'https://bugs.edge.launchpad.net/%s/+bugs?search=Search&field.status=%s' \
+            % (project_name, self.status)
+
+
+class CannedQuery(object):
+
+    def __init__(self, project):
+        self.project = project
+
+    def _run_query(self, from_collection):
+        sys.stderr.write(self.get_name())
+        for bt in from_collection:
+            yield bt
+            sys.stderr.write('.')
+        sys.stderr.write('\n')
+
+    def show_text(self):
+        # print self.get_name()
+        for category in self.query_categories():
+            print '%6d %s %s' % (category.count_bugs(),
+                category.get_name(),
+                category.get_link_url() or '')
+        print
+
+
+class PatchCannedQuery(CannedQuery):
+
+    def get_collection(self):
+        return self.project.searchTasks(has_patch=True)
+
+    def get_name(self):
+        return 'Bugs with patches'
+
+    def query_categories(self):
+        has_patches = HasPatchBugCategory()
+        for bt in self._run_query(
+            self.project.searchTasks(has_patch=True)):
+            has_patches.add(bt)
+        return [has_patches]
+
+
+class StatusCannedQuery(CannedQuery):
+
+    def get_name(self):
+        return 'By Status'
+
+    def query_categories(self):
+        by_status = {}
+        for bugtask in self._run_query(self.project.searchTasks()):
+            if bugtask.status not in by_status:
+                by_status[bugtask.status] = StatusBugCategory(bugtask.status)
+            by_status[bugtask.status].add(bugtask)
+        return by_status.values()
+
+
+def show_bug_report(project):
+    for query_class in StatusCannedQuery, PatchCannedQuery:
+        query_class(project).show_text()
+
+
+launchpad = config.get_launchpad("capture-bug-counts")
+project = get_project()
+show_bug_report(project)
