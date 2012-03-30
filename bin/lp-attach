@@ -1,0 +1,82 @@
+#! /usr/bin/python
+#
+# Copyright (C) 2010 Canonical Ltd
+
+"""lp-attach Attach a file to a Launchpad bug
+
+usage: lp_attach BUGNUMBER 
+
+Attaches a file (read from stdin) as an attachment on a named Launchpad bug.
+"""
+
+# TODO: option to set the attachment name, and to set whether it's a patch
+#
+# TODO: option to open the bug after attaching
+#
+# TODO: option to add a comment as well as the attachment
+#
+# TODO: option to set the subject of the comment
+# 
+# TODO: option to comment on a merge proposal or question rather than a bug
+#
+# TODO: option to add a comment rather than an attachment 
+#
+# TODO: option to use staging -- for now use 
+# export LAUNCHPAD_API=https://api.staging.launchpad.net/
+#
+# TODO: option to set mime type
+#
+# TODO: detect mime type if not set - could use python-magic
+
+import sys
+from lptools import config
+
+
+def guess_mime_type(attachment_bytes):
+    try:
+        import magic
+    except ImportError, e:
+        sys.stderr.write("can't guess mime-types without the python-magic library: %s" % e)
+        mimetype = None
+    else:
+        mime = magic.open(magic.MAGIC_MIME)
+        mimetype = mime.buffer(attachment_bytes)
+    if mimetype is None:
+        mimetype = 'application/binary'
+    print 'attachment type %s' % mimetype
+    return mimetype
+
+
+def main(argv):
+    if len(argv) != 2 or argv[1] == '--help':
+        print __doc__
+        return 3
+
+    try:
+        bugnumber = int(argv[1])
+    except TypeError:
+        sys.stderr.write("please give a Launchpad bug number\n")
+        return 1
+
+    lp = config.get_launchpad("attach")
+    print "getting bug %s" % bugnumber
+    bug = lp.bugs[bugnumber]
+    print 'Attaching to %s' % bug
+
+    attachment_bytes = sys.stdin.read()
+    print '%d bytes to attach' % len(attachment_bytes)
+
+    mime_type = guess_mime_type(attachment_bytes)
+
+    # mime type must be specified otherwise
+    # <https://bugs.edge.launchpad.net/malone/+bug/204560> assumes it's
+    # chemical/x-mopac-input
+    print bug.addAttachment(comment='',
+        data=attachment_bytes,
+        description='',
+        filename='attachment',
+        content_type=mime_type)
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
