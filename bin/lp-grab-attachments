@@ -21,6 +21,7 @@
 # ##################################################################
 
 from optparse import OptionParser
+import codecs
 import errno
 import os
 
@@ -29,7 +30,7 @@ from lptools import config
 USAGE = "lp-grab-attachments <bug numbers>"
 
 
-def download_attachments(bug):
+def download_attachments(bug, descriptions):
 
     bug_folder_name = 'bug-%s' % bug.id
 
@@ -38,6 +39,14 @@ def download_attachments(bug):
     except OSError, error:
         if error.errno == errno.EEXIST:
             return
+
+    if descriptions:
+        description = bug.description
+        filename = os.path.join(os.getcwd(), bug_folder_name,
+            'Description.txt')
+        local_file = codecs.open(filename, encoding="utf-8", mode="w")
+        local_file.write(description)
+        local_file.close()
 
     for attachment in bug.attachments:
         f = attachment.data.open()
@@ -59,6 +68,9 @@ def main():
     parser.add_option('-P', '--project',
                       help='Download attachments from all bugs with a '
                            'open task for this project')
+    parser.add_option('-D', '--descriptions', default=False,
+                      action='store_true',
+                      help='Also download bug descriptions as Description.txt')
 
     opts, args = parser.parse_args()
     if len(args) < 1 and not opts.package and not opts.project:
@@ -88,11 +100,11 @@ def main():
             parser.error("'%s' is not a valid bug number." % arg)
 
         bug = launchpad.bugs[bug_number]
-        download_attachments(bug)
+        download_attachments(bug, opts.descriptions)
 
         if opts.duplicates is True:
             for bug in bug.duplicates:
-                download_attachments(bug)
+                download_attachments(bug, opts.descriptions)
 
 if __name__ == '__main__':
     main()
