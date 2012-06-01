@@ -1,0 +1,104 @@
+#!/usr/bin/python
+#
+# Copyright (C) 2012, Canonical Ltd.
+# Written by Brian Murray
+#
+# ##################################################################
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# See file /usr/share/common-licenses/GPL-3 for more details.
+#
+# ##################################################################
+
+from lptools import config
+from datetime import datetime
+
+import argparse
+import sys
+
+release_tags = []
+
+def check_duplicate(bug, prop):
+    if prop == 'reporter':
+        return bug.owner.name
+    if prop == 'month':
+        return datetime.strftime(bug.date_created, '%Y-%m')
+    if prop == 'day':
+        return datetime.strftime(bug.date_created, '%Y-%m-%d')
+    if prop == 'tags':
+        return ' '.join(bug.tags)
+    if prop == 'rtags':
+        rtags = set(release_tags).intersection(bug.tags)
+        return ' '.join(list(rtags))
+
+
+def main():
+    parser = argparse.ArgumentParser(prog='lp-bug-dupe-properties')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-r', '--reporter', default=False,
+        action='store_true', help='Display reporter of duplicates')
+    group.add_argument('-m', '--month', default=False,
+        action='store_true', help='Display month duplicates were reported')
+    group.add_argument('-d', '--day', default=False,
+        action='store_true', help='Display day duplicates were reported')
+    group.add_argument('-t', '--tags', default=False,
+        action='store_true', help='Display tags of duplicates')
+    group.add_argument('-rt', '--rtags', default=False,
+        action='store_true', help='Display Ubuntu release tags of duplicates')
+    parser.add_argument('-b', '--bug', type=int,
+        help='Bug number of which to check the duplicates')
+
+    opts = parser.parse_args()
+    launchpad = config.get_launchpad("bug-dupe-properties")
+
+    bug_number = opts.bug
+    bug = launchpad.bugs[bug_number]
+
+    dupe_props = {}
+
+    if opts.reporter:
+        search = 'reporter'
+    if opts.month:
+        search = 'month'
+    if opts.day:
+        search = 'day'
+    if opts.tags:
+        search = 'tags'
+    if opts.rtags:
+        search = 'rtags'
+        ubuntu = launchpad.distributions['ubuntu']
+        for series in ubuntu.series:
+            release_tags.append(series.name)
+
+    if bug.number_of_duplicates == 0:
+        print('LP: #%s has no duplicates!' % bug_number)
+        sys.exit(1)
+
+    for dupe in bug.duplicates:
+        dupe_num = dupe.id
+        prop = check_duplicate(dupe, search)
+        if prop in dupe_props.keys():
+            dupe_props[prop].append(str(dupe_num))
+        else:
+            dupe_props[prop] = [str(dupe_num)]
+
+    dupe_count = bug.number_of_duplicates
+    if dupe_count > 1:
+        print('LP: #%s has %s duplicates' % (bug_number, dupe_count))
+    elif dupe_count == 1:
+        print('LP: #%s has %s duplicate' % (bug_number, dupe_count))
+
+    for prop, bugs in sorted(dupe_props.items()):
+        print('  %s: %s' % (prop, ' '.join(bugs)))
+
+
+if __name__ == '__main__':
+    main()
