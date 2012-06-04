@@ -26,7 +26,7 @@ import sys
 
 release_tags = []
 
-def check_duplicate(bug, prop):
+def check_duplicate(bug, prop, key):
     if prop == 'reporter':
         return bug.owner.name
     if prop == 'month':
@@ -38,6 +38,19 @@ def check_duplicate(bug, prop):
     if prop == 'rtags':
         rtags = set(release_tags).intersection(bug.tags)
         return ' '.join(list(rtags))
+    if prop == 'desc':
+        APPORT_TAGS = ['apport-crash', 'apport-bug', 'apport-kerneloops', 'apport-package']
+        if not set(APPORT_TAGS).intersection(bug.tags):
+            return
+        description = bug.description
+        if key not in description:
+            return
+        for line in description.splitlines():
+            if not line.startswith(key):
+                continue
+            if key == line.split(': ')[0]:
+                value = line.split(': ')[-1]
+                return value
 
 
 def main():
@@ -53,6 +66,8 @@ def main():
         action='store_true', help='Display tags of duplicates')
     group.add_argument('-rt', '--rtags', default=False,
         action='store_true', help='Display Ubuntu release tags of duplicates')
+    group.add_argument('-D', '--desc', default=False, type=str,
+        help='Search apport bug description for this key e.g. Package')
     parser.add_argument('-b', '--bug', type=int,
         help='Bug number of which to check the duplicates')
 
@@ -77,6 +92,9 @@ def main():
         ubuntu = launchpad.distributions['ubuntu']
         for series in ubuntu.series:
             release_tags.append(series.name)
+    if opts.desc:
+        search = 'desc'
+        key = opts.desc
 
     if bug.number_of_duplicates == 0:
         print('LP: #%s has no duplicates!' % bug_number)
@@ -84,7 +102,7 @@ def main():
 
     for dupe in bug.duplicates:
         dupe_num = dupe.id
-        prop = check_duplicate(dupe, search)
+        prop = check_duplicate(dupe, search, key)
         if prop in dupe_props.keys():
             dupe_props[prop].append(str(dupe_num))
         else:
