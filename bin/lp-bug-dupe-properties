@@ -95,6 +95,8 @@ def main():
     if opts.desc:
         search = 'desc'
         key = opts.desc
+    else:
+        key = None
 
     if bug.number_of_duplicates == 0:
         print('LP: #%s has no duplicates!' % bug_number)
