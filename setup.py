@@ -8,7 +8,7 @@ description = file(os.path.join(os.path.dirname(__file__), 'README'), 'rb').read
 
 setup(
     name='lptools',
-    version='0.1',
+    version='0.2.0',
     url='https://launchpad.net/lptools',
     author='Rodney Dawes',
     author_email='rodney.dawes@canonical.com',
