@@ -1,0 +1,33 @@
+.TH lp-milestones "1" "Oct 24 2012" "lptools"
+.SH NAME
+lp-milestones \- work with milestones in Launchpad
+
+.SH SYNOPSIS
+.B lp-milestones <\fIcommand\fR>
+
+.SH DESCRIPTION
+\fBlp-milestones\fR allows you to create, delete, and rename milestones, as well
+as create a release from a milestone.
+
+.SH OPTIONS
+Listed below are the possible commands that can be passed to \fBlp-milestones\fR:
+.TP
+.BR help\ commands
+List all supported commands
+.TP
+.B create <\fIprojectname\fR>/<\fIseriesname\fR>/<\fImilestonename\fR>
+Create a milestone.
+.TP
+.B delete <\fIprojectname\fR>/<\fImilestonename\fR>
+Delete a milestone. Note that this cannot delete a milestone with releases on it
+(yet).
+.TP
+.B release <\fIprojectname\fR>/<\fImilestonename\fR>
+Create a release from a milestone.
+.TP
+.B rename <\fIprojectname\fR>/<\fImilestonename\fR> <\fInewname\fR>
+Rename a milestone.
+
+.SH AUTHORS
+\fBlp-milestones\fR was written by Robert Collins <robert.collins@canonical.com>,
+and this manual page was written by Nathan Handler <nhandler@ubuntu.com>.
