@@ -1,0 +1,29 @@
+.TH lp-project "1" "Oct 24 2012" "lptools"
+.SH NAME
+lp-project \- work with projects in Launchpad
+
+.SH SYNOPSIS
+.B lp-project <\fIcommand\fR>
+
+.SH DESCRIPTION
+\fBlp-project\fR allows you to quickly create a new project on Launchpad. It automates the creation of management/commiter teams, a \-dev mailing list, the project itself, and a bzr branch for trunk.
+
+.SH OPTIONS
+Listed below are the possible commands that can be passed to \fBlp-project\fR:
+.TP
+.BR help\ commands
+List all supported commands
+.TP
+.B create <\fIprojectname\fR>
+Create a project. This creates two teams - a management/committer team owner by
+you and a \-dev mailing list owned by the mgmt team. It then creates the project,
+makes it owned by the committer team, creates a new empty bzr branch for trunk
+and then fires up a web browser pointing at the project for you to fine tune.
+After running this command you need to set what LP features you are using
+(https://bugs.launchpad.net/launchpad/+bug/537269), describe your project
+(title, summary, description), upload your code to lp:PROJECT, and turn on the
+mailing list by hand (https://bugs.launchpad.net/launchpad/+bug/537258)
+
+.SH AUTHORS
+\fBlp-project\fR was written by Robert Collins <robert.collins@canonical.com>,
+and this manual page was written by Nathan Handler <nhandler@ubuntu.com>.

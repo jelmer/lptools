@@ -1,0 +1,23 @@
+.TH lp-review-list "1" "Oct 24 2012" "lptools"
+.SH NAME
+lp-review-list \- list reviews for a project
+
+.SH SYNOPSIS
+.B lp-review-list <\fIproject1\fR> [[\fIproject2\fR] ...]
+
+.SH DESCRIPTION
+\fBlp-review-list\fR will present a list of all the branches currently in the
+Needs Review state. The list includes the branch name, and the votes
+on the proposal. You can double-click on a row to open the merge proposal
+page in your browser. It will use launchpadlib and refresh automatically every
+5 minutes.
+
+.SH OPTIONS
+Listed below are the command line options for \fBlp-review-list\fR:
+.TP
+.BR <\fIproject1\fR> [[\fIproject2\fR] ...]
+List of projects to display branches in the Needs Review state for.
+
+.SH AUTHORS
+\fBlp-review-list\fR was written by Rodney Dawes <rodney.dawes@canonical.com>,
+and this manual page was written by Nathan Handler <nhandler@ubuntu.com>.

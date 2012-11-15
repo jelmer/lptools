@@ -1,0 +1,37 @@
+.TH lp-bug-dupe-properties "1" "Oct 24 2012" "lptools"
+.SH NAME
+lp-bug-dupe-properties \- find duplicate Launchpad bug reports
+
+.SH SYNOPSIS
+.B lp-bug-dupe-properties [\fIOPTION\fR]
+
+.SH DESCRIPTION
+\fBlp-bug-dupe-properties\fR displays information such as date, tags, and Ubuntu release information for duplicate Launchpad bugs. It also allows you to filter by certain apport keys.
+
+.SH OPTIONS
+Listed below are the command line options for \fBlp-bug-dupe-properties\fR:
+.TP
+.BR \-r ", " \-\-reporter
+Display reporter of duplicates
+.TP
+.B \-m ", " \-\-month
+Display month duplicates were reported
+.TP
+.B \-d ", " \-\-day
+Display day duplicates were reported
+.TP
+.B \-t ", " \-\-tags
+Display tags of duplicates
+.TP
+.B \-rt ", " \-\-rtags
+Display Ubuntu release tags of duplicates
+.TP
+.B \-D ", " \-\-desc
+Search apport bug description for this key e.g. Package
+.TP
+.B \-b ", " \-\-bug
+Bug number of which to check the duplicates
+
+.SH AUTHORS
+\fBlp-bug-dupe-properties\fR was written by Brian Murray <brian@canonical.com>,
+and this manual page was written by Nathan Handler <nhandler@ubuntu.com>.
