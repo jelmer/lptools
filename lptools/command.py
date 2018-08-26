@@ -38,7 +38,7 @@ __all__ = [
 import os
 import sys
 
-from bzrlib import commands, ui, version_info as bzr_version_info
+from breezy import commands, ui, version_info as bzr_version_info
 
 from lptools import config
 
@@ -72,15 +72,15 @@ class LaunchpadCommand(commands.Command):
 class cmd_help(commands.Command):
     """Show help on a command or other topic."""
 
-    # Can't use the stock bzrlib help, because the help indices aren't quite
+    # Can't use the stock breezy help, because the help indices aren't quite
     # generic enough.
     takes_args = ['topic?']
     def run(self, topic=None):
         if topic is None:
             self.outf.write(sys.modules['__main__'].__doc__)
         else:
-            import bzrlib.help
-            bzrlib.help.help(topic)
+            import breezy.help
+            breezy.help.help(topic)
 
 
 def do_run_bzr(argv):

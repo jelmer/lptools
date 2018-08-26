@@ -25,7 +25,7 @@ lp-milestones help commands -- list commands
 import time
 
 # Might want to make errors import lazy.
-from bzrlib import errors
+from breezy import errors
 from launchpadlib.errors import HTTPError
 
 from lptools.command import *
