@@ -4,7 +4,7 @@ from glob import glob
 from distutils.core import setup
 import os.path
 
-with open(os.path.join(os.path.dirname(__file__), 'README'), 'rb') as f:
+with open(os.path.join(os.path.dirname(__file__), 'README'), 'r') as f:
     description = f.read()
 
 setup(
