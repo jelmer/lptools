@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python333
 
 # Copyright (c) 2009 Canonical Ltd.
 #
@@ -34,8 +34,8 @@ from lptools import config
 def create_release(project, version):
     '''Create new release and milestone for LP project.'''
 
-    print 'Release %s could not be found for project. Create it? (Y/n)' % \
-          version
+    print('Release %s could not be found for project. Create it? (Y/n)' % \
+          version)
     answer = sys.stdin.readline().strip()
     if answer.startswith('n'):
         sys.exit(0)
@@ -46,21 +46,21 @@ def create_release(project, version):
     elif n_series > 1:
         msg = 'More than one series exist. Which one would you like to ' \
               'upload to? Possible series are (listed as index, name):'
-        print msg
+        print(msg)
         for idx, serie in enumerate(project.series):
-            print '\t%i - %s' % (idx, serie.name)
-        print 'Enter series index: '
+            print('\t%i - %s' % (idx, serie.name))
+        print('Enter series index: ')
         answer = sys.stdin.readline().strip()
         try:
             series = project.series[int(answer)]
         except (ValueError, IndexError):
-            print >> sys.stderr, 'The series index is invalid (%s).' % answer
+            print('The series index is invalid (%s).' % answer, file=sys.stderr)
             sys.exit(3)
         else:
-            print "Using series named '%s'" % series.name
+            print("Using series named '%s'" % series.name)
     else:
-        print >> sys.stderr, ('Does not support creating releases if no '
-                              'series exists.')
+        print(('Does not support creating releases if no '
+                              'series exists.'), file=sys.stderr)
         sys.exit(3)
 
     release_date = datetime.date.today().strftime('%Y-%m-%d')
@@ -86,9 +86,9 @@ def cat_file(f):
 
 def main():
     if len(sys.argv) < 4 or len(sys.argv) > 7:
-        print >> sys.stderr, '''Upload a release tarball to a Launchpad project.
+        print('''Upload a release tarball to a Launchpad project.
 
-    Usage: %s <project name> <version> <tarball> [new milestone] [changelog file] [releasenotes file]''' % sys.argv[0]
+    Usage: %s <project name> <version> <tarball> [new milestone] [changelog file] [releasenotes file]''' % sys.argv[0], file=sys.stderr)
         sys.exit(1)
 
     new_milestone = None
@@ -127,10 +127,10 @@ def main():
         # Get the signature, if available.
         signature = tarball + '.asc'
         if not os.path.exists(signature):
-            print 'Calling GPG to create tarball signature...'
+            print('Calling GPG to create tarball signature...')
             cmd = ['gpg', '--armor', '--sign', '--detach-sig', tarball]
             if subprocess.call(cmd) != 0:
-                print >> sys.stderr, 'gpg failed, aborting'
+                print('gpg failed, aborting', file=sys.stderr)
 
         if os.path.exists(signature):
             signature_content = open(signature, 'r').read()
@@ -167,8 +167,8 @@ def main():
                 if mil.name in [milestone.name for milestone in series.all_milestones]:
                     series.newMilestone(name=new_milestone)
 
-    except HTTPError, error:
-        print 'An error happened in the upload:', error.content
+    except HTTPError as error:
+        print('An error happened in the upload:', error.content)
         sys.exit(1)
 
 if __name__ == '__main__':

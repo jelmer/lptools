@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 # vi: expandtab:sts=4
 
 # Copyright (C) 2011 Jelmer Vernooij
@@ -22,12 +22,12 @@ def main(argv):
 
     lp = config.get_launchpad("force-branch-mirror")
     branches = lp.branches.getByUrls(urls=args)
-    for url, branch_dict in branches.iteritems():
+    for url, branch_dict in branches.items():
         if branch_dict is None:
-            print "Branch %s not found" % url
+            print("Branch %s not found" % url)
         else:
             branch = lp.load(branch_dict["self_link"])
-            print "%s: %s" % (branch.bzr_identity, branch.requestMirror())
+            print("%s: %s" % (branch.bzr_identity, branch.requestMirror()))
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

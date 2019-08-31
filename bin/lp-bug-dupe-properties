@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # Copyright (C) 2012, Canonical Ltd.
 # Written by Brian Murray
@@ -99,25 +99,25 @@ def main():
         key = None
 
     if bug.number_of_duplicates == 0:
-        print('LP: #%s has no duplicates!' % bug_number)
+        print(('LP: #%s has no duplicates!' % bug_number))
         sys.exit(1)
 
     for dupe in bug.duplicates:
         dupe_num = dupe.id
         prop = check_duplicate(dupe, search, key)
-        if prop in dupe_props.keys():
+        if prop in list(dupe_props.keys()):
             dupe_props[prop].append(str(dupe_num))
         else:
             dupe_props[prop] = [str(dupe_num)]
 
     dupe_count = bug.number_of_duplicates
     if dupe_count > 1:
-        print('LP: #%s has %s duplicates' % (bug_number, dupe_count))
+        print(('LP: #%s has %s duplicates' % (bug_number, dupe_count)))
     elif dupe_count == 1:
-        print('LP: #%s has %s duplicate' % (bug_number, dupe_count))
+        print(('LP: #%s has %s duplicate' % (bug_number, dupe_count)))
 
     for prop, bugs in sorted(dupe_props.items()):
-        print('  %s: %s' % (prop, ' '.join(bugs)))
+        print(('  %s: %s' % (prop, ' '.join(bugs))))
 
 
 if __name__ == '__main__':

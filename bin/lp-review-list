@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # Author: Rodney Dawes <rodney.dawes@canonical.com>
 #
@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import with_statement
+
 import re
 import subprocess
 from threading import Thread
@@ -87,7 +87,7 @@ class Window(gtk.Window):
 
             self.me = self.launchpad.me
 
-            print "Allo, %s" % self.me.name
+            print("Allo, %s" % self.me.name)
             gtk.gdk.threads_enter()
             self.__refresh(None)
             gtk.gdk.threads_leave()
@@ -114,18 +114,18 @@ class Window(gtk.Window):
 
       def __load_merges(self):
             merges = []
-            mine = self.me.getRequestedReviews(status=[u'Needs review'])
+            mine = self.me.getRequestedReviews(status=['Needs review'])
             for merge in mine:
                   merges.append(merge)
 
             for team in self.me.super_teams:
-                  for merge in team.getRequestedReviews(status=[u'Needs review']):
+                  for merge in team.getRequestedReviews(status=['Needs review']):
                         if merge not in merges:
                               merges.append(merge)
 
             for merge in merges:
                   votes = {}
-                  for key in VOTES.keys():
+                  for key in list(VOTES.keys()):
                         votes[key] = 0
 
                   for vote in merge.votes:
@@ -134,14 +134,14 @@ class Window(gtk.Window):
                         else:
                               votes[vote.comment.vote] += 1
 
-                  for key in votes.keys():
+                  for key in list(votes.keys()):
                         if votes[key] == 0:
                               votes.pop(key, None)
 
                   vstr = ", ".join(
                         ["<span color='%s'>%s</span>: %d" \
                                % (VOTES[key], key, votes[key]) \
-                               for key in votes.keys()]
+                               for key in list(votes.keys())]
                         )
                   if vstr == "":
                         vstr = "No Reviews"

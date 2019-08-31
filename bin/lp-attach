@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 #
 # Copyright (C) 2010 Canonical Ltd
 
@@ -35,7 +35,7 @@ from lptools import config
 def guess_mime_type(attachment_bytes):
     try:
         import magic
-    except ImportError, e:
+    except ImportError as e:
         sys.stderr.write("can't guess mime-types without the python-magic library: %s" % e)
         mimetype = None
     else:
@@ -43,13 +43,13 @@ def guess_mime_type(attachment_bytes):
         mimetype = mime.buffer(attachment_bytes)
     if mimetype is None:
         mimetype = 'application/binary'
-    print 'attachment type %s' % mimetype
+    print('attachment type %s' % mimetype)
     return mimetype
 
 
 def main(argv):
     if len(argv) != 2 or argv[1] == '--help':
-        print __doc__
+        print(__doc__)
         return 3
 
     try:
@@ -59,23 +59,23 @@ def main(argv):
         return 1
 
     lp = config.get_launchpad("attach")
-    print "getting bug %s" % bugnumber
+    print("getting bug %s" % bugnumber)
     bug = lp.bugs[bugnumber]
-    print 'Attaching to %s' % bug
+    print('Attaching to %s' % bug)
 
     attachment_bytes = sys.stdin.read()
-    print '%d bytes to attach' % len(attachment_bytes)
+    print('%d bytes to attach' % len(attachment_bytes))
 
     mime_type = guess_mime_type(attachment_bytes)
 
     # mime type must be specified otherwise
     # <https://bugs.edge.launchpad.net/malone/+bug/204560> assumes it's
     # chemical/x-mopac-input
-    print bug.addAttachment(comment='',
+    print(bug.addAttachment(comment='',
         data=attachment_bytes,
         description='',
         filename='attachment',
-        content_type=mime_type)
+        content_type=mime_type))
 
 
 if __name__ == '__main__':

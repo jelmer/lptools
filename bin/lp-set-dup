@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: UTF-8 -*-
 """Sets the "duplicate of" bug of a bug and its dups."""
 
@@ -30,7 +30,7 @@ from launchpadlib.errors import HTTPError
 from lptools import config
 
 def die(message):
-    print >> sys.stderr, "Fatal: " + message
+    print("Fatal: " + message, file=sys.stderr)
     sys.exit(1)
 
 def main():
@@ -57,10 +57,10 @@ def main():
     # check that the new main bug isn't a duplicate
     try:
         new_main_bug = launchpad.bugs[args[0]]
-    except HTTPError, error:
+    except HTTPError as error:
         if error.response.status == 401:
-            print >> sys.stderr, ("E: Don't have enough permissions to access "
-                                  "bug %s") % (args[0])
+            print(("E: Don't have enough permissions to access "
+                                  "bug %s") % (args[0]), file=sys.stderr)
             die(error.content)
         else:
             raise
@@ -68,7 +68,7 @@ def main():
     if new_main_dup_of is not None:
         answer = None
         try:
-            answer = raw_input("Bug %s is a duplicate of %s; would you like to "
+            answer = input("Bug %s is a duplicate of %s; would you like to "
                                "use %s as the new main bug instead? [y/N]" % \
                                (new_main_bug.id, new_main_dup_of.id,
                                 new_main_dup_of.id))
@@ -81,38 +81,38 @@ def main():
     # build list of bugs to process, first the dups then the bug
     bugs_to_process = []
     for bug_number in args[1:]:
-        print "Processing %s" % (bug_number)
+        print("Processing %s" % (bug_number))
         try:
             bug = launchpad.bugs[bug_number]
-        except HTTPError, error:
+        except HTTPError as error:
             if error.response.status == 401:
-                print >> sys.stderr, ("W: Don't have enough permissions to "
-                                      "access bug %s") % (bug_number)
-                print >> sys.stderr, "W: %s" % (error.content)
+                print(("W: Don't have enough permissions to "
+                                      "access bug %s") % (bug_number), file=sys.stderr)
+                print("W: %s" % (error.content), file=sys.stderr)
                 continue
             else:
                 raise
         dups = bug.duplicates
         if dups is not None:
             bugs_to_process.extend(dups)
-            print "Found %i dups for %s" % (len(dups), bug_number)
+            print("Found %i dups for %s" % (len(dups), bug_number))
         bugs_to_process.append(bug)
 
     # process dups first, then their main bug
-    print "Would set the following bugs as duplicates of %s: %s" % \
-          (new_main_bug.id, " ".join([str(b.id) for b in bugs_to_process]))
+    print("Would set the following bugs as duplicates of %s: %s" % \
+          (new_main_bug.id, " ".join([str(b.id) for b in bugs_to_process])))
 
     if not options.force:
         answer = None
         try:
-            answer = raw_input("Proceed? [y/N]")
+            answer = input("Proceed? [y/N]")
         except:
             die("Aborted")
         if answer.lower() not in ("y", "yes"):
             die("User aborted")
 
     for bug in bugs_to_process:
-        print "Marking bug %s as a duplicate of %s" % (bug.id, new_main_bug.id)
+        print("Marking bug %s as a duplicate of %s" % (bug.id, new_main_bug.id))
         bug.duplicate_of = new_main_bug
         bug.lp_save()
 

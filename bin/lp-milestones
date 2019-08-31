@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # Author: Robert Collins <robert.collins@canonical.com>
 #
@@ -74,7 +74,7 @@ class cmd_delete(LaunchpadCommand):
         m = self.launchpad.load('%s/+milestone/%s' % tuple(components))
         try:
             m.delete()
-        except HTTPError, e:
+        except HTTPError as e:
             if e.response.status == 404:
                 pass
             elif e.response.status == 500:

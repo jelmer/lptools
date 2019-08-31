@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 # -*- coding: UTF-8 -*-
 """Briefly list status of Launchpad bugs."""
 
@@ -42,18 +42,17 @@ def main():
     for bugnum in args:
         try:
             bug = launchpad.bugs[bugnum]
-            print "Bug %s: %s" % (bugnum, bug.title)
+            print("Bug %s: %s" % (bugnum, bug.title))
             for task in bug.bug_tasks:
-                print "  %s: %s" % (task.bug_target_name, task.status)
-        except HTTPError, error:
+                print("  %s: %s" % (task.bug_target_name, task.status))
+        except HTTPError as error:
             if error.response.status == 401:
-                print >> sys.stderr, \
-                    ("E: Don't have enough permissions to access bug %s" %
-                     bugnum)
-                print >> sys.stderr, error.content
+                print(("E: Don't have enough permissions to access bug %s" %
+                     bugnum), file=sys.stderr)
+                print(error.content, file=sys.stderr)
                 continue
             elif error.response.status == 404:
-                print >> sys.stderr, "E: Bug %s not found" % bugnum
+                print("E: Bug %s not found" % bugnum, file=sys.stderr)
             else:
                 raise
 
