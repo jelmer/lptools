@@ -4,7 +4,8 @@ from glob import glob
 from distutils.core import setup
 import os.path
 
-description = file(os.path.join(os.path.dirname(__file__), 'README'), 'rb').read()
+with open(os.path.join(os.path.dirname(__file__), 'README'), 'rb') as f:
+    description = f.read()
 
 setup(
     name='lptools',
@@ -20,7 +21,7 @@ setup(
                                              'templates/recipe-status.html'])],
     packages=['lptools'],
     scripts=glob('bin/*'),
-    classifiers = [
+    classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: GNU General Public License v3 (GPL3)'
