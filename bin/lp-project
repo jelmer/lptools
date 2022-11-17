@@ -25,7 +25,7 @@ lp-project help commands -- list commands
 import os
 
 # Might want to make errors import lazy.
-from bzrlib import bzrdir
+from breezy import controldir
 
 from lptools.command import *
 
@@ -55,7 +55,7 @@ class cmd_create(LaunchpadCommand):
     def run(self, project):
         self.outf.write('creating project %s\n' % project)
         # load the lp plugin - we needs it, but don't want its commands shown.
-        from bzrlib.plugins import launchpad
+        from breezy.plugins import launchpad
         project_d = {'project':project}
         mgmt = self.launchpad.people.newTeam(
             display_name='%s committers' % project, name=project,
@@ -96,7 +96,7 @@ If that is not possible, just describe as well as you can what is happening and 
         lp_host = os.environ.get('LAUNCHPAD_API', '')
         if lp_host:
             lp_host = '//%s/' % lp_host
-        branch = bzrdir.BzrDir.create_branch_convenience(
+        branch = controldir.ControlDir.create_branch_convenience(
             'lp:%s%s' % (lp_host, branch_path), force_new_tree=False)
         series = proj.getSeries(name='trunk')
         series.branch_link = self.launchpad.load(branch_path)
