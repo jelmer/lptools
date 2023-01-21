@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 
 import sys
 
@@ -70,10 +70,10 @@ class CannedQuery(object):
     def show_text(self):
         # print self.get_name()
         for category in self.query_categories():
-            print '%6d %s %s' % (category.count_bugs(),
+            print('%6d %s %s' % (category.count_bugs(),
                 category.get_name(),
-                category.get_link_url() or '')
-        print
+                category.get_link_url() or ''))
+        print()
 
 
 class PatchCannedQuery(CannedQuery):
@@ -103,7 +103,7 @@ class StatusCannedQuery(CannedQuery):
             if bugtask.status not in by_status:
                 by_status[bugtask.status] = StatusBugCategory(bugtask.status)
             by_status[bugtask.status].add(bugtask)
-        return by_status.values()
+        return list(by_status.values())
 
 
 def show_bug_report(project):

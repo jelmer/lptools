@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2007 Canonical Ltd.
@@ -79,13 +79,13 @@ def main():
     try:
         team = launchpad.people[team]
     except KeyError:
-        print >> sys.stderr, "E: The team '%s' doesn't exist." % team
+        print("E: The team '%s' doesn't exist." % team, file=sys.stderr)
 
     # Get a list of branches
     branches = team.getBranches()
 
-    print "Downloading all branches for the '%s' team. This may take some " \
-        "time." % team.display_name
+    print("Downloading all branches for the '%s' team. This may take some " \
+        "time." % team.display_name)
 
     try:
         os.makedirs(team.name)
@@ -101,11 +101,11 @@ def main():
         os.chdir(project_name)
 
         if not os.path.exists(branch.name):
-            print "Branching %s ..." % branch.display_name
+            print("Branching %s ..." % branch.display_name)
             cmd = ["bzr", operation_type, branch.bzr_identity, branch.name]
             subprocess.call(cmd)
         else:
-            print "Merging %s ..." % branch.display_name
+            print("Merging %s ..." % branch.display_name)
             os.chdir(branch.name)
             subprocess.call(["bzr", "merge", "--pull", "--remember"])
         os.chdir(os.path.join(directory, team.name))
@@ -117,4 +117,4 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print "Operation was interrupted by user."
+        print("Operation was interrupted by user.")

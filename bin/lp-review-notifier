@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # Author: Rodney Dawes <rodney.dawes@canonical.com>
 #
@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import with_statement
+
 import os
 import sys
 
@@ -25,7 +25,7 @@ import gtk
 import pygtk
 import pynotify
 
-from ConfigParser import ConfigParser
+from configparser import ConfigParser
 import subprocess
 
 from xdg.BaseDirectory import (
@@ -182,7 +182,7 @@ class Main(object):
         self.config = Preferences()
 
         if len(self.config.projects) == 0:
-            print "No Projects specified"
+            print("No Projects specified")
             sys.exit(1)
 
         for project in self.config.projects:
@@ -209,14 +209,14 @@ class Main(object):
             lp_project = self.launchpad.projects[project]
             focus = lp_project.development_focus.branch
         except AttributeError:
-            print "Project %s has no development focus." % project
+            print("Project %s has no development focus." % project)
             return False
         except KeyError:
-            print "Project %s not found." % project
+            print("Project %s not found." % project)
             return False
 
         if not focus:
-            print "Project %s has no development focus." % project
+            print("Project %s has no development focus." % project)
             return False
 
         trunk = focus
@@ -280,7 +280,7 @@ class Main(object):
                      ICON_NAME)
             updated = True
         else:
-            print "%s status is %s." % (source, c.queue_status)
+            print("%s status is %s." % (source, c.queue_status))
 
         if updated:
             n.set_urgency(pynotify.URGENCY_LOW)

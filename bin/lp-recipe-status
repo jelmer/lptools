@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # vi: expandtab:sts=4
 
 # Copyright (C) 2011 Jelmer Vernooij <jelmer@samba.org>
@@ -22,13 +22,13 @@
 """Show the status of the recipes owned by a particular user.
 """
 
-from cStringIO import StringIO
+from io import StringIO
 import gzip
 import optparse
 import os
 import re
 import sys
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 from lptools import config
 
@@ -70,7 +70,7 @@ def source_build_find_version(source_build):
     if cached_version:
         return tuple(cached_version.split(" "))
     # FIXME: Find a more efficient way to retrieve the package/version that was built
-    build_log_gz = urllib.urlopen(source_build.build_log_url)
+    build_log_gz = urllib.request.urlopen(source_build.build_log_url)
     build_log = gzip.GzipFile(fileobj=StringIO(build_log_gz.read()))
     version = None
     source_name = None
@@ -172,10 +172,10 @@ def recipe_status_html(launchpad, person, recipes, outf):
         last_per_distroseries = gather_per_distroseries_source_builds(recipe)
         source_builds[recipe.name] = last_per_distroseries
         relevant_distroseries.update(set(last_per_distroseries))
-        (sp_success, sp_failures) = filter_source_builds(last_per_distroseries.values())
+        (sp_success, sp_failures) = filter_source_builds(list(last_per_distroseries.values()))
         binary_builds[recipe.name] = find_binary_builds(recipe, sp_success)
         all_binary_builds_ok[recipe.name] = {}
-        for distroseries, recipe_binary_builds in binary_builds[recipe.name].iteritems():
+        for distroseries, recipe_binary_builds in binary_builds[recipe.name].items():
             all_binary_builds_ok[recipe.name][distroseries] = all(
                 [bb.buildstate == "Successfully built" for bb in recipe_binary_builds])
     relevant_distroseries = list(relevant_distroseries)
@@ -201,7 +201,7 @@ def recipe_status_text(recipes, outf):
     for recipe in recipes:
         last_per_distroseries = gather_per_distroseries_source_builds(recipe)
         (sp_success, sp_failures) = filter_source_builds(
-            last_per_distroseries.values())
+            list(last_per_distroseries.values()))
         sp_success_distroseries = [build.distro_series.name for build in sp_success]
         if sp_failures:
             outf.write("%s source build failures (%s successful):\n" % (
