@@ -84,7 +84,7 @@ def main():
     if options.shell == "ipython":
         try:
             try: # ipython >= 0.11
-                from IPython.frontend.terminal.embed import InteractiveShellEmbed
+                from IPython.terminal.embed import InteractiveShellEmbed
                 sh = InteractiveShellEmbed(banner2=banner, user_ns={'lp': launchpad})
             except ImportError: # ipython < 0.11
                 # pylint does not handle nested try-except, disable import error
