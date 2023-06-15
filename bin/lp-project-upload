@@ -110,7 +110,6 @@ def main():
         proj = launchpad.projects[project]
         # Find the release in the project's releases collection.
         release = None
-        import pdb; pdb.set_trace()
         for rel in proj.releases:
             if rel.version == version:
                 release = rel
