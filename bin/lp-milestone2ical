@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # Author: Rodney Dawes <rodney.dawes@canonical.com>
 #
@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import with_statement
+
 
 import os
 import sys
@@ -84,7 +84,7 @@ class MSMain(object):
         finally:
             self.__convert_to_ical(lp_project)
             self.__end_calendar()
-            print self.calendar()
+            print(self.calendar())
 
     def run(self):
         self.thread = Thread(target=self.__login_and_go).start()
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     try:
         project = sys.argv[1]
     except IndexError:
-        print "Usage: %s <project>" % sys.argv[0]
+        print("Usage: %s <project>" % sys.argv[0])
         exit(1)
 
     try:

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Open an interactive launchpadlib Python shell.
 # It supports all known LP service instances and API versions. The login
@@ -52,16 +52,16 @@ def main():
     if len(args) >= 1:
         try:
             instance = lookup_service_root(args[0])
-        except ValueError, err:
-            print 'E: %s' % (err)
-            print 'I: Falling back to "production".'
+        except ValueError as err:
+            print('E: %s' % (err))
+            print('I: Falling back to "production".')
 
     if len(args) >= 2:
         if args[1] in valid_api_versions:
             api_version = args[1]
         else:
-            print 'E: "%s" is not a valid LP API version.' % (args[1])
-            print 'I: Falling back to "1.0".'
+            print('E: "%s" is not a valid LP API version.' % (args[1]))
+            print('I: Falling back to "1.0".')
 
     if options.anonymous:
         launchpad = Launchpad.login_anonymously('lp-shell', instance,
@@ -94,7 +94,7 @@ def main():
                 sh.set_banner(sh.IP.BANNER + '\n' + banner)
             sh.excepthook = sys.__excepthook__
         except ImportError:
-            print "E: ipython not available. Using normal python shell."
+            print("E: ipython not available. Using normal python shell.")
 
     if sh:
         sh()
@@ -106,7 +106,7 @@ def main():
                 try:
                     import readline
                 except ImportError:
-                    print 'I: readline module not available.'
+                    print('I: readline module not available.')
                 else:
                     import rlcompleter
                     readline.parse_and_bind("tab: complete")
